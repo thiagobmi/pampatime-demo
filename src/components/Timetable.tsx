@@ -20,36 +20,36 @@ const Timetable = () => {
   ];
 
   return (
-    <div className="w-full overflow-x-auto">
-      <div className="flex items-center justify-between mb-4">
+    <div className="w-full overflow-x-auto border border-gray-200 rounded-lg shadow-sm bg-white">
+      <div className="flex items-center justify-between p-4 border-b">
         <div className="flex items-center space-x-2">
-          <Button variant="ghost" size="icon">
+          <Button variant="ghost" size="icon" className="h-8 w-8">
             <ChevronLeft className="h-4 w-4" />
           </Button>
-          <span className="font-medium">A1-202</span>
-          <Button variant="ghost" size="icon">
+          <span className="font-medium text-lg">A1-202</span>
+          <Button variant="ghost" size="icon" className="h-8 w-8">
             <ChevronRight className="h-4 w-4" />
           </Button>
         </div>
         
         <div className="flex items-center space-x-2">
-          <Button variant="outline" className="bg-white">Professor</Button>
-          <Button variant="outline" className="bg-white">Semestre</Button>
-          <Button variant="outline" className="bg-pampa-green text-white hover:bg-pampa-green/90">Sala</Button>
-          <Button variant="outline" className="bg-white">Curso</Button>
+          <Button variant="outline" className="bg-white text-sm h-8">Professor</Button>
+          <Button variant="outline" className="bg-white text-sm h-8">Semestre</Button>
+          <Button variant="outline" className="bg-pampa-green text-white hover:bg-pampa-green/90 text-sm h-8">Sala</Button>
+          <Button variant="outline" className="bg-white text-sm h-8">Curso</Button>
         </div>
       </div>
       
       <div className="min-w-[900px]">
         {/* Header with days */}
         <div className="grid grid-cols-7 border-b">
-          <div className="p-2 text-center border-r font-medium text-xs">
+          <div className="p-2 text-center border-r bg-gray-50 font-medium text-xs">
             <div>EST</div>
             <div>GMT-5</div>
           </div>
           
           {weekDays.map((day) => (
-            <div key={day.short} className="p-2 text-center border-r">
+            <div key={day.short} className="p-2 text-center border-r bg-gray-50">
               <div className="text-xs text-gray-500">{day.short}</div>
               <div className="font-medium">{day.pt}</div>
             </div>
@@ -60,8 +60,8 @@ const Timetable = () => {
         <div className="relative">
           {timeSlots.map((time, index) => (
             <div key={time} className="grid grid-cols-7 border-b">
-              <div className="p-2 text-center border-r text-sm">{time}</div>
-              <div className="border-r min-h-[40px]">
+              <div className="p-2 text-center border-r text-sm bg-gray-50">{time}</div>
+              <div className="border-r min-h-[45px]">
                 {index === 11 && (
                   <ClassCard 
                     title="Práticas de Interação"
@@ -71,9 +71,9 @@ const Timetable = () => {
                   />
                 )}
               </div>
-              <div className="border-r min-h-[40px]"></div>
-              <div className="border-r min-h-[40px]"></div>
-              <div className="border-r min-h-[40px]">
+              <div className="border-r min-h-[45px]"></div>
+              <div className="border-r min-h-[45px]"></div>
+              <div className="border-r min-h-[45px]">
                 {index === 11 && (
                   <ClassCard 
                     title="Desafios de Programação"
@@ -83,8 +83,8 @@ const Timetable = () => {
                   />
                 )}
               </div>
-              <div className="border-r min-h-[40px]"></div>
-              <div className="min-h-[40px]"></div>
+              <div className="border-r min-h-[45px]"></div>
+              <div className="min-h-[45px]"></div>
             </div>
           ))}
         </div>

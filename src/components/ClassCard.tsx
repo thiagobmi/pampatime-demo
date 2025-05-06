@@ -27,10 +27,10 @@ const ClassCard: React.FC<ClassCardProps> = ({
   };
 
   return (
-    <div className={`class-card ${cardClasses[type]} ${className}`}>
+    <div className={`class-card ${cardClasses[type]} shadow-sm ${className}`}>
       <div className="font-medium">{title}</div>
-      {room && <div>Sala: {room}</div>}
-      {professor && <div>Professor: {professor}</div>}
+      {room && <div className="text-xs text-gray-700">Sala: {room}</div>}
+      {professor && <div className="text-xs text-gray-700">Professor: {professor}</div>}
       {roomInfo && <div className="text-xs mt-1 text-gray-600">{roomInfo}</div>}
     </div>
   );

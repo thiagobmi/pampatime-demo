@@ -84,22 +84,22 @@
   }
   
   .class-card-calculus {
-    @apply bg-purple-100 border-l-4 border-purple-400;
+    @apply bg-purple-100 border-l-4 border-purple-500;
   }
   
   .class-card-math {
-    @apply bg-green-100 border-l-4 border-green-400;
+    @apply bg-green-100 border-l-4 border-green-500;
   }
   
   .class-card-algorithms {
-    @apply bg-red-100 border-l-4 border-red-400;
+    @apply bg-red-100 border-l-4 border-red-500;
   }
   
   .class-card-practices {
-    @apply bg-blue-100 border-l-4 border-blue-400;
+    @apply bg-blue-100 border-l-4 border-blue-500;
   }
   
   .class-card-challenges {
-    @apply bg-green-100 border-l-4 border-green-400;
+    @apply bg-green-100 border-l-4 border-green-500;
   }
 }
