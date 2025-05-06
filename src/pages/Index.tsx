@@ -1,12 +1,32 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+
+import React from 'react';
+import Navbar from '@/components/Navbar';
+import SidePanel from '@/components/SidePanel';
+import Timetable from '@/components/Timetable';
+import { Button } from "@/components/ui/button";
 
 const Index = () => {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold mb-4">Welcome to Your Blank App</h1>
-        <p className="text-xl text-gray-600">Start building your amazing project here!</p>
-      </div>
+    <div className="min-h-screen flex flex-col">
+      <Navbar />
+      
+      <main className="flex-1 p-6">
+        <div className="mb-4 flex justify-between">
+          <Button className="bg-pampa-green hover:bg-pampa-green/90 text-white">
+            Publicar
+          </Button>
+        </div>
+        
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          <div className="lg:col-span-1">
+            <SidePanel />
+          </div>
+          
+          <div className="lg:col-span-3">
+            <Timetable />
+          </div>
+        </div>
+      </main>
     </div>
   );
 };
