@@ -103,3 +103,11 @@
     @apply bg-green-100 border-l-4 border-green-500;
   }
 }
+
+
+.fc-timegrid-slot {
+  height: 50px !important; /* Altura fixa para todos os slots */
+}
+.fc-timegrid-slot-lane {
+  height: 50px !important;
+}
