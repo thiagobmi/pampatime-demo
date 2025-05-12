@@ -11,11 +11,11 @@ const Index = () => {
       <Navbar />
       
       <main className="flex-1 p-4 md:p-6">
-        <div className="mb-4 flex justify-between">
+        {/* <div className="mb-4 flex justify-between">
           <Button className="bg-pampa-green hover:bg-pampa-green/90 text-white">
             Publicar
           </Button>
-        </div>
+        </div> */}
         
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 md:gap-6">
           <div className="lg:col-span-1">
