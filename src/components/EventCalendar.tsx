@@ -25,6 +25,25 @@ interface EventCalendarProps {
     onEventResize?: (info: any) => void;
     onEventClick?: (info: any) => void;
 }
+const renderDayHeaderContent = (arg: any) => {
+    // Abreviações em inglês dos dias da semana
+    const englishAbbr = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
+    // Dias da semana em português
+    const ptDays = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+    
+    // Obtém o índice do dia da semana (0-6)
+    const dayIndex = arg.date.getDay();
+    
+    return {
+      html: `
+        <div class="fc-day-header-custom">
+          <div class="fc-day-abbr">${englishAbbr[dayIndex]}</div>
+          <div class="fc-day-name">${ptDays[dayIndex]}</div>
+        </div>
+      `
+    };
+  };
+
 
 export const EventCalendar: React.FC<EventCalendarProps> = ({
     events,
@@ -76,6 +95,9 @@ export const EventCalendar: React.FC<EventCalendarProps> = ({
             eventResize={onEventResize}
             eventClick={onEventClick}
             height="100%"
+            dayHeaderContent={renderDayHeaderContent}
+            
+
             eventResizeStart={(info) => {
                 // Apply half-hour snapping at the start of resize
                 if (info.event.start) {

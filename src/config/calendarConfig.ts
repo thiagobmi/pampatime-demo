@@ -8,7 +8,8 @@ export const calendarConfig: CalendarOptions = {
   //   center: 'title',
   //   right: 'timeGridWeek,dayGridWeek,listWeek'
   // },
-  dayHeaderFormat: { weekday: 'short' },
+  dayHeaderFormat: { weekday: 'long' },
+  hiddenDays: [0], // esconde o domingo
   editable: true,
   selectable: false,
   selectMirror: true,
@@ -53,4 +54,17 @@ export const calendarConfig: CalendarOptions = {
   
   // Add drag scroll capability
   dragScroll: true,
+
+  eventAllow: function(dropInfo, draggedEvent) { 
+    //TODO: Não permitir eventos com mais de 2h
+    // Função util para implementar as limitações de eventos
+
+
+    // dropInfo.start é um objeto Date do evento sendo criado ou movido
+    const day = dropInfo.start.getDay(); // 0 = Domingo, 6 = Sábado
+  
+    // Permite somente se não for domingo
+    return day !== 0;
+  },
+
 };

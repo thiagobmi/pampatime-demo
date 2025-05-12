@@ -111,3 +111,74 @@
 .fc-timegrid-slot-lane {
   height: 50px !important;
 }
+
+.fc-timegrid-col.fc-day-today {
+  background-color: transparent !important;
+}
+
+
+/* Exemplo de estilos para personalizar o cabeçalho */
+.day-header {
+    text-transform: capitalize;
+    font-weight: 500;
+    font-size: 1rem;
+    padding: 8px 0;
+}
+
+/* Para destacar cada dia da semana em células separadas como na imagem */
+.fc-col-header-cell {
+    border: 1px solid #ddd;
+    background-color: #f8f9fa;
+}
+
+/* Para ajustar a altura do cabeçalho se necessário */
+.fc-col-header {
+    height: 40px;
+}
+
+.fc-col-header-cell-cushion {
+  text-transform: capitalize;
+}
+
+.fc-day-header-custom {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start; /* Alinha itens à esquerda em vez de centro */
+  padding: 1px 5px; /* Adicionado padding horizontal para dar espaço */
+  width: 100%;
+}
+
+.fc-day-abbr {
+  font-size: 0.8em;
+  text-transform: uppercase;
+  color: #999;
+  font-weight: lighter;
+  text-align: left; /* Garante alinhamento à esquerda */
+  align-self: flex-start; /* Alinha o próprio elemento à esquerda */
+}
+
+.fc-day-name {
+  font-weight: bold;
+  text-align: left;
+  /* font-size: large; */
+  font-size: 1.3rem;
+  /* margin-top: px; */
+  width: 100%; /* Garante que ocupe toda a largura disponível */
+}
+
+/* Estilos adicionais para garantir que o cabeçalho tenha espaço suficiente */
+.fc .fc-col-header-cell-cushion {
+  padding: 5px 3px;
+  width: 100%; /* Ocupa toda a largura disponível */
+}
+
+/* Ajuste a altura do cabeçalho para acomodar as duas linhas */
+.fc .fc-col-header-cell {
+  padding: 0;
+}
+
+/* Necessário para garantir que o conteúdo do cabeçalho tenha largura total */
+.fc-col-header-cell-cushion {
+  width: 100%;
+  display: block;
+}
