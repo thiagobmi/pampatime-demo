@@ -1,24 +1,40 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { ChevronDown, Search, X } from 'lucide-react';
 
-const SearchableFilter = ({ label, options = [], onSelect, className = "" }) => {
+interface SearchableFilterProps {
+  label: string;
+  options?: string[];
+  onSelect: (value: string) => void;
+  className?: string;
+  value?: string; // Add value prop for controlled component
+}
+
+const SearchableFilter: React.FC<SearchableFilterProps> = ({ 
+  label, 
+  options = [], 
+  onSelect, 
+  className = "",
+  value = "" // Default value
+}) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedValue, setSelectedValue] = useState('');
-  const dropdownRef = useRef(null);
-  const inputRef = useRef(null);
+  const [selectedValue, setSelectedValue] = useState(value);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  // Update selectedValue when value prop changes
+  useEffect(() => {
+    setSelectedValue(value);
+  }, [value]);
 
   // Generate time options from 7:30 to 22:30
-  const generateTimeOptions = () => {
-    const times = [];
-    for (let hour = 7; hour <= 22; hour++) {
-      times.push(`${hour.toString().padStart(2, '0')}:30`);
-      if (hour < 22) {
-        times.push(`${(hour + 1).toString().padStart(2, '0')}:00`);
-      }
-    }
-    return times;
-  };
+const generateTimeOptions = () => {
+  const times = [];
+  for (let hour = 7; hour <= 22; hour++) {
+    times.push(`${hour.toString().padStart(2, '0')}:30`);
+  }
+  return times;
+};
 
   // Sample data - replace with your actual data
   const sampleOptions = {
@@ -32,7 +48,7 @@ const SearchableFilter = ({ label, options = [], onSelect, className = "" }) => 
     Disciplina: ['Matemática', 'Física', 'Química', 'Biologia', 'História', 'Geografia', 'Português', 'Inglês']
   };
 
-  const currentOptions = options.length > 0 ? options : (sampleOptions[label] || []);
+  const currentOptions = options.length > 0 ? options : (sampleOptions[label as keyof typeof sampleOptions] || []);
   
   // Filter options based on search term
   const filteredOptions = currentOptions.filter(option =>
@@ -41,8 +57,8 @@ const SearchableFilter = ({ label, options = [], onSelect, className = "" }) => 
 
   // Close dropdown when clicking outside
   useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setIsOpen(false);
       }
     };
@@ -58,7 +74,7 @@ const SearchableFilter = ({ label, options = [], onSelect, className = "" }) => 
     }
   }, [isOpen]);
 
-  const handleSelect = (option) => {
+  const handleSelect = (option: string) => {
     setSelectedValue(option);
     setSearchTerm('');
     setIsOpen(false);
@@ -67,7 +83,7 @@ const SearchableFilter = ({ label, options = [], onSelect, className = "" }) => 
     }
   };
 
-  const clearSelection = (e) => {
+  const clearSelection = (e: React.MouseEvent) => {
     e.stopPropagation();
     setSelectedValue('');
     setSearchTerm('');

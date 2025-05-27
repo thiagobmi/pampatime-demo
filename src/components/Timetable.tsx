@@ -1,26 +1,62 @@
-import React from 'react';
+import React, { forwardRef, useImperativeHandle } from 'react';
 import { ChevronLeft, ChevronRight, Search } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { useState } from 'react';
-import { EventCalendar } from './EventCalendar'; // Importando o componente EventCalendar
+import { EventCalendar } from './EventCalendar';
 
-const Timetable = () => {
-  // Eventos de exemplo
-  const [events, setEvents] = useState([]);
+interface Event {
+  id?: string | number;
+  title: string;
+  start?: Date | string;
+  end?: Date | string;
+  room?: string;
+  professor?: string;
+  type?: string;
+  backgroundColor?: string;
+  borderColor?: string;
+}
+
+interface TimetableProps {
+  onEventClick?: (event: Event) => void;
+}
+
+interface TimetableRef {
+  addEvent: (event: Event) => void;
+  updateEvent: (event: Event) => void;
+  deleteEvent: (eventId: string | number) => void;
+}
+
+const Timetable = forwardRef<TimetableRef, TimetableProps>(({ onEventClick }, ref) => {
+  // Events state
+  const [events, setEvents] = useState<Event[]>([]);
   console.log('Eventos:', events);
 
-  // Manipuladores de eventos para o EventCalendar
-  const handleEventClick = (info) => {
+  // Handle event click - pass the event data to parent
+  const handleEventClick = (info: any) => {
     console.log('Evento clicado:', info.event);
+    const eventData: Event = {
+      id: info.event.id,
+      title: info.event.title,
+      start: info.event.start,
+      end: info.event.end,
+      room: info.event.extendedProps?.room,
+      professor: info.event.extendedProps?.professor,
+      type: info.event.extendedProps?.type,
+      backgroundColor: info.event.backgroundColor,
+      borderColor: info.event.borderColor
+    };
+    
+    if (onEventClick) {
+      onEventClick(eventData);
+    }
   };
 
-  const handleEventDrop = (info) => {
+  const handleEventDrop = (info: any) => {
     console.log('Evento movido:', info.event);
     const updatedEvents = [...events];
     const eventIndex = updatedEvents.findIndex(e => e.id === info.event.id);
     
     if (eventIndex !== -1) {
-      // Update existing event with new time/date
       updatedEvents[eventIndex] = {
         ...updatedEvents[eventIndex],
         start: info.event.start,
@@ -30,13 +66,12 @@ const Timetable = () => {
     }
   };
 
-  const handleEventResize = (info) => {
+  const handleEventResize = (info: any) => {
     console.log('Evento redimensionado:', info.event);
     const updatedEvents = [...events];
     const eventIndex = updatedEvents.findIndex(e => e.id === info.event.id);
     
     if (eventIndex !== -1) {
-      // Update existing event with new duration
       updatedEvents[eventIndex] = {
         ...updatedEvents[eventIndex],
         end: info.event.end
@@ -45,22 +80,50 @@ const Timetable = () => {
     }
   };
 
-  const handleEventReceive = (info) => {
+  const handleEventReceive = (info: any) => {
     console.log('Evento recebido:', info.event);
-    const newEvent = {
-      id: info.event.id || `event-${Date.now()}`, // Generate ID if not provided
+    const newEvent: Event = {
+      id: info.event.id || `event-${Date.now()}`,
       title: info.event.title || 'New Event',
       start: info.event.start,
       end: info.event.end,
-      // You can add more properties as needed
+      room: info.event.extendedProps?.room,
+      professor: info.event.extendedProps?.professor,
+      type: info.event.extendedProps?.type,
       backgroundColor: info.event.backgroundColor || '#3788d8',
-      borderColor: info.event.borderColor || '#3788d8',
-      textColor: info.event.textColor || '#ffffff',
+      borderColor: info.event.borderColor || '#3788d8'
     };
-    const originalEventData = info.event.toPlainObject ? info.event.toPlainObject() : info.event;
 
-    setEvents(prevEvents => [...prevEvents, { ...originalEventData, ...newEvent }]);
+    setEvents(prevEvents => [...prevEvents, newEvent]);
   };
+
+  // Function to add event from form
+  const addEvent = (event: Event) => {
+    setEvents(prevEvents => [...prevEvents, event]);
+  };
+
+  // Function to update event
+  const updateEvent = (updatedEvent: Event) => {
+    setEvents(prevEvents => 
+      prevEvents.map(event => 
+        event.id === updatedEvent.id ? updatedEvent : event
+      )
+    );
+  };
+
+  // Function to delete event
+  const deleteEvent = (eventId: string | number) => {
+    setEvents(prevEvents => 
+      prevEvents.filter(event => event.id !== eventId)
+    );
+  };
+
+  // Expose functions to parent component
+  useImperativeHandle(ref, () => ({
+    addEvent,
+    updateEvent,
+    deleteEvent
+  }));
 
   return (
     <div className="w-full h-full flex flex-col border border-gray-200 rounded-lg shadow-sm bg-white">
@@ -110,6 +173,8 @@ const Timetable = () => {
       </div>
     </div>
   );
-};
+});
+
+Timetable.displayName = 'Timetable';
 
 export default Timetable;
