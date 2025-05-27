@@ -60,15 +60,11 @@ const Timetable = () => {
     const originalEventData = info.event.toPlainObject ? info.event.toPlainObject() : info.event;
 
     setEvents(prevEvents => [...prevEvents, { ...originalEventData, ...newEvent }]);
-
-
   };
 
-  
-
   return (
-    <div className="w-full overflow-x-auto border border-gray-200 rounded-lg shadow-sm bg-white">
-      <div className="flex items-center justify-between p-4 border-b">
+    <div className="w-full h-full flex flex-col border border-gray-200 rounded-lg shadow-sm bg-white">
+      <div className="flex items-center justify-between p-2 border-b">
         <div className="flex items-center space-x-2">
           <Button variant="ghost" size="icon" className="h-8 w-8">
             <ChevronLeft className="h-4 w-4" />
@@ -86,7 +82,7 @@ const Timetable = () => {
           <Button variant="outline" className="bg-white text-sm h-8 rounded-none rounded-r-md border-none">Curso</Button>
         </div>
         
-        <div className="relative mb-2">
+        <div className="relative">
           <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-3 w-3 text-gray-500" />
           <input
             type="text"
@@ -101,9 +97,8 @@ const Timetable = () => {
         </div>
       </div>
 
-      <div className="flex-grow h-[600px]">
-        <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-sm shadow-md h-full overflow-hidden">
-          {/* Usando o componente EventCalendar importado */}
+      <div className="flex-1 min-h-0 overflow-hidden">
+        <div className="h-full">
           <EventCalendar 
             events={events}
             onEventClick={handleEventClick}

@@ -4,10 +4,11 @@ import ClassesPanel from './ClassesPanel';
 
 const SidePanel = () => {
   return (
-    <div className="flex flex-col h-full">
-      <FilterPanel />
-      <div className="h-4"></div> {/* Espaçamento entre os componentes */}
-      <div className="flex-1">
+    <div className="flex flex-col h-full space-y-3 overflow-hidden">
+      <div className="flex-shrink-0">
+        <FilterPanel />
+      </div>
+      <div className="flex-1 min-h-0 overflow-hidden">
         <ClassesPanel />
       </div>
     </div>

@@ -1,28 +1,20 @@
-
 import React from 'react';
 import Navbar from '@/components/Navbar';
 import SidePanel from '@/components/SidePanel';
 import Timetable from '@/components/Timetable';
-import { Button } from "@/components/ui/button";
 
 const Index = () => {
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
+    <div className="h-screen flex flex-col bg-gray-50 overflow-hidden">
       <Navbar />
       
-      <main className="flex-1 p-4 md:p-6">
-        {/* <div className="mb-4 flex justify-between">
-          <Button className="bg-pampa-green hover:bg-pampa-green/90 text-white">
-            Publicar
-          </Button>
-        </div> */}
-        
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 md:gap-6">
-          <div className="lg:col-span-1">
+      <main className="flex-1 p-2 md:p-4 min-h-0 overflow-hidden">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-2 md:gap-4 h-full">
+          <div className="lg:col-span-1 h-full overflow-auto">
             <SidePanel />
           </div>
           
-          <div className="lg:col-span-3">
+          <div className="lg:col-span-3 h-full">
             <Timetable />
           </div>
         </div>

@@ -21,8 +21,8 @@ const ClassesPanel = () => {
   }, []);
 
 return (
-  <div className="bg-white p-3 rounded-lg border border-gray-200 shadow-sm flex flex-col flex-1 min-h-0">
-    <div className="relative mb-2">
+  <div className="bg-white p-3 rounded-lg border border-gray-200 shadow-sm flex flex-col h-full min-h-0">
+    <div className="relative mb-2 flex-shrink-0">
       <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500" />
       <input 
         type="text" 
@@ -36,7 +36,7 @@ return (
       </Button>
     </div>
       
-      <div ref={draggableContainerRef} className="space-y-2 overflow-y-auto max-h-80">
+      <div ref={draggableContainerRef} className="space-y-2 overflow-y-auto flex-1">
         <ClassCard 
           title="Cálculo I" 
           room="A101" 
