@@ -11,9 +11,19 @@ interface Event {
   end?: Date | string;
   room?: string;
   professor?: string;
+  semester?: string;  // Adicionado campo semestre
+  class?: string;     // Adicionado campo turma
   type?: string;
   backgroundColor?: string;
   borderColor?: string;
+  extendedProps?: {
+    room?: string;
+    professor?: string;
+    type?: string;
+    roomInfo?: string;
+    semester?: string;
+    class?: string;
+  };
 }
 
 interface TimetableProps {
@@ -34,6 +44,8 @@ const Timetable = forwardRef<TimetableRef, TimetableProps>(({ onEventClick }, re
   // Handle event click - pass the event data to parent
   const handleEventClick = (info: any) => {
     console.log('Evento clicado:', info.event);
+    
+    // Corrigido: Extrair todas as propriedades do evento, incluindo semestre e turma
     const eventData: Event = {
       id: info.event.id,
       title: info.event.title,
@@ -41,10 +53,15 @@ const Timetable = forwardRef<TimetableRef, TimetableProps>(({ onEventClick }, re
       end: info.event.end,
       room: info.event.extendedProps?.room,
       professor: info.event.extendedProps?.professor,
+      semester: info.event.extendedProps?.semester,  // Adicionado
+      class: info.event.extendedProps?.class,        // Adicionado
       type: info.event.extendedProps?.type,
       backgroundColor: info.event.backgroundColor,
-      borderColor: info.event.borderColor
+      borderColor: info.event.borderColor,
+      extendedProps: info.event.extendedProps
     };
+    
+    console.log('Dados do evento passados para edição:', eventData);
     
     if (onEventClick) {
       onEventClick(eventData);
@@ -89,9 +106,12 @@ const Timetable = forwardRef<TimetableRef, TimetableProps>(({ onEventClick }, re
       end: info.event.end,
       room: info.event.extendedProps?.room,
       professor: info.event.extendedProps?.professor,
+      semester: info.event.extendedProps?.semester,  // Adicionado
+      class: info.event.extendedProps?.class,        // Adicionado
       type: info.event.extendedProps?.type,
       backgroundColor: info.event.backgroundColor || '#3788d8',
-      borderColor: info.event.borderColor || '#3788d8'
+      borderColor: info.event.borderColor || '#3788d8',
+      extendedProps: info.event.extendedProps
     };
 
     setEvents(prevEvents => [...prevEvents, newEvent]);
@@ -99,11 +119,13 @@ const Timetable = forwardRef<TimetableRef, TimetableProps>(({ onEventClick }, re
 
   // Function to add event from form
   const addEvent = (event: Event) => {
+    console.log('Adicionando evento:', event);
     setEvents(prevEvents => [...prevEvents, event]);
   };
 
   // Function to update event
   const updateEvent = (updatedEvent: Event) => {
+    console.log('Atualizando evento:', updatedEvent);
     setEvents(prevEvents => 
       prevEvents.map(event => 
         event.id === updatedEvent.id ? updatedEvent : event
@@ -113,6 +135,7 @@ const Timetable = forwardRef<TimetableRef, TimetableProps>(({ onEventClick }, re
 
   // Function to delete event
   const deleteEvent = (eventId: string | number) => {
+    console.log('Deletando evento:', eventId);
     setEvents(prevEvents => 
       prevEvents.filter(event => event.id !== eventId)
     );
