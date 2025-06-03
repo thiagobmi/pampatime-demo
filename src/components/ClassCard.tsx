@@ -1,4 +1,6 @@
+// src/components/ClassCard.tsx
 import React, { useRef, useEffect } from 'react';
+import { Event, getEventTypeColors } from '@/types/Event';
 
 interface ClassCardProps {
   title: string;
@@ -8,13 +10,7 @@ interface ClassCardProps {
   className?: string;
   roomInfo?: string;
   // Props para o draggable do FullCalendar
-  event?: {
-    title: string;
-    duration?: string;
-    backgroundColor?: string;
-    borderColor?: string;
-    extendedProps?: any;
-  };
+  event?: Partial<Event>;
 }
 
 const ClassCard: React.FC<ClassCardProps> = ({
@@ -36,38 +32,22 @@ const ClassCard: React.FC<ClassCardProps> = ({
     challenges: 'class-card-challenges'
   };
   
-  // Cores de fundo pastel para cada tipo
-  const cardColors = {
-    calculus: '#d1fae5', // Verde pastel
-    math: '#dbeafe', // Azul pastel
-    algorithms: '#fef3c7', // Amarelo pastel
-    practices: '#e9d5ff', // Púrpura pastel
-    challenges: '#fecaca'  // Rosa pastel (mantido)
-  };
-  
-  // Cores de borda mais escuras para cada tipo
-  const borderColors = {
-    calculus: '#10b981', // Verde mais escuro
-    math: '#3b82f6', // Azul mais escuro
-    algorithms: '#f59e0b', // Amarelo mais escuro
-    practices: '#8b5cf6', // Púrpura mais escuro
-    challenges: '#f87171'  // Rosa (mantido)
-  };
+  // Get colors using the unified color system
+  const colors = getEventTypeColors(type);
   
   // Configuração do evento draggable
-  const eventData = {
+  const eventData: Partial<Event> = {
     title: title,
-    duration: '01:00', // Duração padrão
-    backgroundColor: cardColors[type],
-    borderColor: borderColors[type],
-    textColor: '#000000', // Cor do texto
-    classNames: [cardClasses[type]], // Adiciona a classe ao evento
+    backgroundColor: colors.bg,
+    borderColor: colors.border,
+    textColor: '#000000',
     extendedProps: {
       room,
       professor,
       type,
       roomInfo
-    }
+    },
+    ...event // Allow override with any passed event data
   };
   
   useEffect(() => {
@@ -82,8 +62,8 @@ const ClassCard: React.FC<ClassCardProps> = ({
       ref={cardRef}
       className={`class-card ${cardClasses[type]} shadow-sm ${className || ''} cursor-move`}
       style={{
-        backgroundColor: cardColors[type],
-        borderLeft: `4px solid ${borderColors[type]}`,
+        backgroundColor: colors.bg,
+        borderLeft: `4px solid ${colors.border}`,
         padding: '8px',
         borderRadius: '4px',
         marginBottom: '8px'

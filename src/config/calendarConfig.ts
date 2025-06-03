@@ -1,15 +1,12 @@
+// src/config/calendarConfig.ts
 import { CalendarOptions } from '@fullcalendar/core';
 
 export const calendarConfig: CalendarOptions = {
   initialView: "timeGridWeek",
+  initialDate: new Date(2020, 0, 6), // January 6, 2020 (Monday of first week)
   headerToolbar: false,
-  // headerToolbar: {
-  //   left: '',
-  //   center: 'title',
-  //   right: 'timeGridWeek,dayGridWeek,listWeek'
-  // },
   dayHeaderFormat: { weekday: 'long' },
-  hiddenDays: [0], // esconde o domingo
+  hiddenDays: [0, 6], // Hide Sunday (0) and Saturday (6)
   editable: true,
   selectable: false,
   selectMirror: true,
@@ -19,12 +16,17 @@ export const calendarConfig: CalendarOptions = {
   allDaySlot: false,
   displayEventTime: true,
   displayEventEnd: true,
-  // Change the text that appeats on daygridweek button
+  
+  // Navigation disabled to keep fixed week
+  navLinks: false,
+  
+  // Button text customization
   buttonText: {
     dayGridWeek: 'Agenda Semanal'
   },
 
-  titleFormat: () => 'Agenda Semanal',
+  titleFormat: () => 'Pampatime :P',
+  
   // Update snap duration to 1 hour to match the 7:30, 8:30 pattern
   snapDuration: "01:00:00", 
   slotDuration: "01:00:00", 
@@ -36,7 +38,7 @@ export const calendarConfig: CalendarOptions = {
   
   // Additional constraints for time snapping
   eventDurationEditable: true,
-  nowIndicator:false,
+  nowIndicator: false, // Disable now indicator since we're using fixed dates
   eventTimeFormat: {
     hour: '2-digit',
     minute: '2-digit',
@@ -45,7 +47,6 @@ export const calendarConfig: CalendarOptions = {
   },
   eventStartEditable: true,
 
-  
   // Add event constraints
   eventConstraint: {
     startTime: "07:30",
@@ -56,15 +57,25 @@ export const calendarConfig: CalendarOptions = {
   dragScroll: true,
 
   eventAllow: function(dropInfo, draggedEvent) { 
-    //TODO: Não permitir eventos com mais de 2h
-    // Função util para implementar as limitações de eventos
-
-
-    // dropInfo.start é um objeto Date do evento sendo criado ou movido
-    const day = dropInfo.start.getDay(); // 0 = Domingo, 6 = Sábado
-  
-    // Permite somente se não for domingo
-    return day !== 0;
+    // Only allow Monday to Friday (1-5)
+    const day = dropInfo.start.getDay();
+    return day >= 1 && day <= 5;
   },
 
+  // Prevent navigation away from the fixed week
+  datesSet: function(dateInfo) {
+    // Always keep the calendar on the first week of 2020
+    const targetDate = new Date(2020, 0, 6); // January 6, 2020
+    if (dateInfo.start.getTime() !== targetDate.getTime()) {
+      // Force calendar back to fixed week if user tries to navigate
+      setTimeout(() => {
+        if (dateInfo.view.calendar) {
+          dateInfo.view.calendar.gotoDate(targetDate);
+        }
+      }, 0);
+    }
+  },
+
+  // Disable all navigation
+  customButtons: {},
 };

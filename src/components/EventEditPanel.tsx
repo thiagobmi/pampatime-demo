@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import SearchableFilter from './SearchableFilter';
-import { X, Calendar, Clock, MapPin, User } from 'lucide-react';
+import { X, Calendar, Clock, MapPin, User, BookOpen, Users } from 'lucide-react';
 
 interface Event {
   id?: number;
@@ -10,6 +10,8 @@ interface Event {
   end?: string;
   room?: string;
   professor?: string;
+  semester?: string;  // Adicionado campo semestre
+  class?: string;     // Adicionado campo turma
   type?: 'calculus' | 'math' | 'algorithms' | 'practices' | 'challenges';
   backgroundColor?: string;
   borderColor?: string;
@@ -36,6 +38,8 @@ const EventEditPanel: React.FC<EventEditPanelProps> = ({
     end: '',
     room: '',
     professor: '',
+    semester: '',    // Adicionado ao estado inicial
+    class: '',       // Adicionado ao estado inicial
     type: 'math'
   });
 
@@ -49,13 +53,13 @@ const EventEditPanel: React.FC<EventEditPanelProps> = ({
   };
 
   // Generate time options
-const generateTimeOptions = () => {
-  const times = [];
-  for (let hour = 7; hour <= 22; hour++) {
-    times.push(`${hour.toString().padStart(2, '0')}:30`);
-  }
-  return times;
-};
+  const generateTimeOptions = () => {
+    const times = [];
+    for (let hour = 7; hour <= 22; hour++) {
+      times.push(`${hour.toString().padStart(2, '0')}:30`);
+    }
+    return times;
+  };
 
   const timeOptions = generateTimeOptions();
 
@@ -74,6 +78,8 @@ const generateTimeOptions = () => {
         end: formatDateTimeLocal(endDate),
         room: selectedEvent.room || '',
         professor: selectedEvent.professor || '',
+        semester: selectedEvent.semester || '',  // Recupera o semestre
+        class: selectedEvent.class || '',        // Recupera a turma
         type: selectedEvent.type || 'math'
       });
     } else {
@@ -87,6 +93,8 @@ const generateTimeOptions = () => {
         end: formatDateTimeLocal(nextHour),
         room: '',
         professor: '',
+        semester: '',    // Reseta o semestre
+        class: '',       // Reseta a turma
         type: 'math'
       });
     }
@@ -239,6 +247,39 @@ const generateTimeOptions = () => {
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             placeholder="Nome do professor"
           />
+        </div>
+
+        {/* Grid com Semestre e Turma */}
+        <div className="grid grid-cols-2 gap-4">
+          {/* Semestre */}
+          <div>
+            <label className="block text-sm font-medium mb-1 flex items-center gap-1">
+              <BookOpen className="w-4 h-4" />
+              Semestre
+            </label>
+            <input
+              type="text"
+              value={formData.semester}
+              onChange={(e) => handleInputChange('semester', e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Ex: 2024/1"
+            />
+          </div>
+
+          {/* Turma */}
+          <div>
+            <label className="block text-sm font-medium mb-1 flex items-center gap-1">
+              <Users className="w-4 h-4" />
+              Turma
+            </label>
+            <input
+              type="text"
+              value={formData.class}
+              onChange={(e) => handleInputChange('class', e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Ex: A, B, C"
+            />
+          </div>
         </div>
 
         {/* Buttons */}

@@ -1,18 +1,8 @@
+// src/components/FilterPanel.tsx
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import SearchableFilter from './SearchableFilter';
-
-interface Event {
-  id?: string | number;
-  title: string;
-  start?: Date | string;
-  end?: Date | string;
-  room?: string;
-  professor?: string;
-  type?: string;
-  backgroundColor?: string;
-  borderColor?: string;
-}
+import { Event, createEventWithFixedDate, getEventTypeColors, getFixedDateForDay } from '@/types/Event';
 
 interface FilterPanelProps {
   selectedEvent?: Event | null;
@@ -29,7 +19,6 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
   onEventDelete,
   onClearSelection
 }) => {
-  // TODO: unify event objects
   // State to track form values
   const [formData, setFormData] = useState({
     title: '',
@@ -53,12 +42,12 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
       setFormData({
         title: selectedEvent.title || '',
         professor: selectedEvent.professor || '',
-        semestre: '',
+        semestre: selectedEvent.semester || '',    // Corrigido: usar semester do evento
         horarioInicio: startTime ? formatTimeForInput(startTime) : '',
         horarioFinal: endTime ? formatTimeForInput(endTime) : '',
         sala: selectedEvent.room || '',
-        dia: startTime ? getDayName(startTime) : '',
-        turma: '',
+        dia: startTime ? getDayNameFromFixedDate(startTime) : '',
+        turma: selectedEvent.class || '',          // Corrigido: usar class do evento
         disciplina: selectedEvent.title || '',
         type: (selectedEvent.type as any) || 'math'
       });
@@ -83,9 +72,10 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
     return date.toTimeString().slice(0, 5); // HH:MM format
   };
 
-  const getDayName = (date: Date): string => {
+  const getDayNameFromFixedDate = (date: Date): string => {
+    const dayOfWeek = date.getDay();
     const days = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
-    return days[date.getDay()];
+    return days[dayOfWeek];
   };
 
   // Function to convert time string to minutes for comparison
@@ -147,38 +137,21 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
       return;
     }
 
-    // Create date objects for start and end times
-    const today = new Date();
-    const dayMap = {
-      'Segunda': 1, 'Terça': 2, 'Quarta': 3, 'Quinta': 4, 'Sexta': 5, 'Sábado': 6, 'Domingo': 0
-    };
-
-    const targetDay = dayMap[formData.dia as keyof typeof dayMap];
-    const currentDay = today.getDay();
-    const daysUntilTarget = (targetDay - currentDay + 7) % 7;
-
-    const startDate = new Date(today);
-    startDate.setDate(today.getDate() + daysUntilTarget);
-
-    const [startHour, startMinute] = formData.horarioInicio.split(':').map(Number);
-    const [endHour, endMinute] = formData.horarioFinal.split(':').map(Number);
-
-    startDate.setHours(startHour, startMinute, 0, 0);
-
-    const endDate = new Date(startDate);
-    endDate.setHours(endHour, endMinute, 0, 0);
-
-    const newEvent: Event = {
-      id: `event-${Date.now()}`,
-      title: formData.title,
-      start: startDate,
-      end: endDate,
-      room: formData.sala,
-      professor: formData.professor,
-      type: formData.type,
-      backgroundColor: getColorForType(formData.type),
-      borderColor: getBorderColorForType(formData.type)
-    };
+    // Use the unified event creation function with all fields
+    const newEvent = createEventWithFixedDate(
+      formData.title,
+      formData.dia,
+      formData.horarioInicio,
+      formData.horarioFinal,
+      {
+        room: formData.sala,
+        professor: formData.professor,
+        semester: formData.semestre,    // Incluído semestre
+        class: formData.turma,          // Incluído turma
+        type: formData.type,
+        id: `event-${Date.now()}`
+      }
+    );
 
     if (onEventAdd) {
       onEventAdd(newEvent);
@@ -205,44 +178,21 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
       return;
     }
 
-    const updatedEvent: Event = {
-      ...selectedEvent,
-      title: formData.title,
-      room: formData.sala,
-      // Construct start and end Date objects using selected day and time
-      start: (() => {
-        const today = new Date();
-        const dayMap = {
-          'Segunda': 1, 'Terça': 2, 'Quarta': 3, 'Quinta': 4, 'Sexta': 5, 'Sábado': 6, 'Domingo': 0
-        };
-        const targetDay = dayMap[formData.dia as keyof typeof dayMap];
-        const currentDay = today.getDay();
-        const daysUntilTarget = (targetDay - currentDay + 7) % 7;
-        const startDate = new Date(today);
-        startDate.setDate(today.getDate() + daysUntilTarget);
-        const [startHour, startMinute] = formData.horarioInicio.split(':').map(Number);
-        startDate.setHours(startHour, startMinute, 0, 0);
-        return startDate;
-      })(),
-      end: (() => {
-        const today = new Date();
-        const dayMap = {
-          'Segunda': 1, 'Terça': 2, 'Quarta': 3, 'Quinta': 4, 'Sexta': 5, 'Sábado': 6, 'Domingo': 0
-        };
-        const targetDay = dayMap[formData.dia as keyof typeof dayMap];
-        const currentDay = today.getDay();
-        const daysUntilTarget = (targetDay - currentDay + 7) % 7;
-        const endDate = new Date(today);
-        endDate.setDate(today.getDate() + daysUntilTarget);
-        const [endHour, endMinute] = formData.horarioFinal.split(':').map(Number);
-        endDate.setHours(endHour, endMinute, 0, 0);
-        return endDate;
-      })(),
-      professor: formData.professor,
-      type: formData.type,
-      backgroundColor: getColorForType(formData.type),
-      borderColor: getBorderColorForType(formData.type)
-    };
+    // Create updated event using the unified function with all fields
+    const updatedEvent = createEventWithFixedDate(
+      formData.title,
+      formData.dia,
+      formData.horarioInicio,
+      formData.horarioFinal,
+      {
+        room: formData.sala,
+        professor: formData.professor,
+        semester: formData.semestre,    // Incluído semestre na edição
+        class: formData.turma,          // Incluído turma na edição
+        type: formData.type,
+        id: selectedEvent.id
+      }
+    );
 
     if (onEventUpdate) {
       onEventUpdate(updatedEvent);
@@ -262,34 +212,20 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
     }
   };
 
-  const getColorForType = (type: string) => {
-    const colors = {
-      calculus: '#d1fae5',
-      math: '#dbeafe',
-      algorithms: '#fef3c7',
-      practices: '#e9d5ff',
-      challenges: '#fecaca'
-    };
-    return colors[type as keyof typeof colors] || colors.math;
-  };
-
-  const getBorderColorForType = (type: string) => {
-    const colors = {
-      calculus: '#10b981',
-      math: '#3b82f6',
-      algorithms: '#f59e0b',
-      practices: '#8b5cf6',
-      challenges: '#f87171'
-    };
-    return colors[type as keyof typeof colors] || colors.math;
-  };
-
   return (
     <div className="bg-white p-3 rounded-lg border border-gray-200 shadow-sm">
       {selectedEvent && (
         <div className="mb-3 p-2 bg-blue-50 rounded border-l-4 border-blue-500">
           <div className="text-sm font-medium text-blue-800">Editando Evento</div>
           <div className="text-xs text-blue-600">{selectedEvent.title}</div>
+          {/* Mostrar semestre e turma se disponíveis */}
+          {(selectedEvent.semester || selectedEvent.class) && (
+            <div className="text-xs text-blue-500 mt-1">
+              {selectedEvent.semester && `Semestre: ${selectedEvent.semester}`}
+              {selectedEvent.semester && selectedEvent.class && ' • '}
+              {selectedEvent.class && `Turma: ${selectedEvent.class}`}
+            </div>
+          )}
           <Button
             variant="ghost"
             size="sm"
@@ -387,6 +323,8 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
       {formData.horarioInicio && (
         <div className="mt-2 text-xs text-gray-500">
           Horário selecionado: {formData.horarioInicio} - {formData.horarioFinal || 'Selecione o horário final'}
+          {formData.semestre && ` • Semestre: ${formData.semestre}`}
+          {formData.turma && ` • Turma: ${formData.turma}`}
         </div>
       )}
     </div>

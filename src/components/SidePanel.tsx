@@ -1,18 +1,8 @@
+// src/components/SidePanel.tsx
 import React from 'react';
 import FilterPanel from './FilterPanel';
 import ClassesPanel from './ClassesPanel';
-
-interface Event {
-  id?: string | number;
-  title: string;
-  start?: Date | string;
-  end?: Date | string;
-  room?: string;
-  professor?: string;
-  type?: string;
-  backgroundColor?: string;
-  borderColor?: string;
-}
+import { Event } from '@/types/Event';
 
 interface SidePanelProps {
   selectedEvent?: Event | null;

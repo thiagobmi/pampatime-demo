@@ -1,19 +1,9 @@
+// src/pages/Index.tsx
 import React, { useState, useRef } from 'react';
 import Navbar from '@/components/Navbar';
 import SidePanel from '@/components/SidePanel';
 import Timetable from '@/components/Timetable';
-
-interface Event {
-  id?: string | number;
-  title: string;
-  start?: Date | string;
-  end?: Date | string;
-  room?: string;
-  professor?: string;
-  type?: string;
-  backgroundColor?: string;
-  borderColor?: string;
-}
+import { Event } from '@/types/Event';
 
 const Index = () => {
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
