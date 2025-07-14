@@ -68,6 +68,7 @@ const Timetable = forwardRef<TimetableRef, TimetableProps>(({ onEventClick }, re
     }
   };
 
+  
   const handleEventDrop = (info: any) => {
     console.log('Evento movido:', info.event);
     const updatedEvents = [...events];
@@ -79,6 +80,8 @@ const Timetable = forwardRef<TimetableRef, TimetableProps>(({ onEventClick }, re
         start: info.event.start,
         end: info.event.end
       };
+
+
       setEvents(updatedEvents);
     }
   };

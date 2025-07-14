@@ -1,9 +1,10 @@
 // src/pages/Index.tsx
 import React, { useState, useRef } from 'react';
-import Navbar from '@/components/Navbar';
+// import Navbar from '@/components/Navbar';
 import SidePanel from '@/components/SidePanel';
 import Timetable from '@/components/Timetable';
 import { Event } from '@/types/Event';
+import Header from '@/components/Header';
 
 const Index = () => {
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
@@ -49,7 +50,8 @@ const Index = () => {
 
   return (
     <div className="h-screen flex flex-col bg-gray-50 overflow-hidden">
-      <Navbar />
+      {/* <Header /> */}
+
       
       <main className="flex-1 p-2 md:p-4 min-h-0 overflow-hidden">
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-2 md:gap-4 h-full">
