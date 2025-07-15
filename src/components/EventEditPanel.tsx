@@ -1,28 +1,28 @@
+// src/components/EventEditPanel.tsx
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
-import SearchableFilter from './SearchableFilter';
 import { X, Calendar, Clock, MapPin, User, BookOpen, Users } from 'lucide-react';
-
-interface Event {
-  id?: number;
-  title: string;
-  start: string;
-  end?: string;
-  room?: string;
-  professor?: string;
-  semester?: string;  // Adicionado campo semestre
-  class?: string;     // Adicionado campo turma
-  type?: string; // 'calculus' | 'math' | 'algorithms' | 'practices' | 'challenges'
-  backgroundColor?: string;
-  borderColor?: string;
-}
+import { Event, getEventTypeColors, applyEventColors } from '@/types/Event';
 
 interface EventEditPanelProps {
   selectedEvent: Event | null;
   onSave: (event: Event) => void;
-  onDelete: (eventId: number) => void;
+  onDelete: (eventId: string | number) => void;
   onCancel: () => void;
   isEditing: boolean;
+}
+
+// Internal form data interface that matches the form inputs
+interface FormData {
+  id?: string | number;
+  title: string;
+  start: string; // datetime-local input always returns string
+  end: string;   // datetime-local input always returns string
+  room?: string;
+  professor?: string;
+  semester?: string;
+  class?: string;
+  type?: string;
 }
 
 const EventEditPanel: React.FC<EventEditPanelProps> = ({
@@ -32,42 +32,20 @@ const EventEditPanel: React.FC<EventEditPanelProps> = ({
   onCancel,
   isEditing
 }) => {
-  const [formData, setFormData] = useState<Event>({
+  const [formData, setFormData] = useState<FormData>({
     title: '',
     start: '',
     end: '',
     room: '',
     professor: '',
-    semester: '',    // Adicionado ao estado inicial
-    class: '',       // Adicionado ao estado inicial
+    semester: '',
+    class: '',
     type: ''
   });
 
-  // Event type colors
-  const eventTypeColors = {
-    calculus: { bg: '#d1fae5', border: '#10b981' },
-    math: { bg: '#dbeafe', border: '#3b82f6' },
-    algorithms: { bg: '#fef3c7', border: '#f59e0b' },
-    practices: { bg: '#e9d5ff', border: '#8b5cf6' },
-    challenges: { bg: '#fecaca', border: '#f87171' }
-  };
-
-  // Generate time options
-  const generateTimeOptions = () => {
-    const times = [];
-    for (let hour = 7; hour <= 22; hour++) {
-      times.push(`${hour.toString().padStart(2, '0')}:30`);
-    }
-    return times;
-  };
-
-  const timeOptions = generateTimeOptions();
-
-  // Days of the week
-  const dayOptions = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta'];
-
   useEffect(() => {
     if (selectedEvent) {
+      // Convert dates to datetime-local format
       const startDate = selectedEvent.start ? new Date(selectedEvent.start) : new Date();
       const endDate = selectedEvent.end ? new Date(selectedEvent.end) : new Date(startDate.getTime() + 60*60*1000);
       
@@ -78,9 +56,9 @@ const EventEditPanel: React.FC<EventEditPanelProps> = ({
         end: formatDateTimeLocal(endDate),
         room: selectedEvent.room || '',
         professor: selectedEvent.professor || '',
-        semester: selectedEvent.semester || '',  // Recupera o semestre
-        class: selectedEvent.class || '',        // Recupera a turma
-        type: selectedEvent.type || 'vazio :('
+        semester: selectedEvent.semester || '',
+        class: selectedEvent.class || '',
+        type: selectedEvent.type || ''
       });
     } else {
       // Reset form for new event
@@ -93,14 +71,14 @@ const EventEditPanel: React.FC<EventEditPanelProps> = ({
         end: formatDateTimeLocal(nextHour),
         room: '',
         professor: '',
-        semester: '',    // Reseta o semestre
-        class: '',       // Reseta a turma
-        type: 'math'
+        semester: '',
+        class: '',
+        type: ''
       });
     }
   }, [selectedEvent]);
 
-  const formatDateTimeLocal = (date: Date) => {
+  const formatDateTimeLocal = (date: Date): string => {
     const year = date.getFullYear();
     const month = (date.getMonth() + 1).toString().padStart(2, '0');
     const day = date.getDate().toString().padStart(2, '0');
@@ -109,7 +87,7 @@ const EventEditPanel: React.FC<EventEditPanelProps> = ({
     return `${year}-${month}-${day}T${hours}:${minutes}`;
   };
 
-  const handleInputChange = (field: string, value: string) => {
+  const handleInputChange = (field: keyof FormData, value: string) => {
     setFormData(prev => ({
       ...prev,
       [field]: value
@@ -130,17 +108,22 @@ const EventEditPanel: React.FC<EventEditPanelProps> = ({
       return;
     }
 
-    const colors = eventTypeColors[formData.type as keyof typeof eventTypeColors];
-    
-    const eventToSave: Event = {
-      ...formData,
-      id: formData.id || Date.now(),
-      start: formData.start,
-      end: formData.end,
-      backgroundColor: colors.bg,
-      borderColor: colors.border
+    // Create base event with proper Date objects and regenerated colors
+    const baseEvent: Partial<Event> = {
+      id: formData.id || `event-${Date.now()}`,
+      title: formData.title,
+      start: startDate, // Convert to Date object
+      end: endDate,     // Convert to Date object
+      room: formData.room,
+      professor: formData.professor,
+      semester: formData.semester,
+      class: formData.class,
+      type: formData.type,
+      allDay: false
     };
 
+    // Apply fresh colors based on the current type
+    const eventToSave = applyEventColors(baseEvent);
     onSave(eventToSave);
   };
 
@@ -149,6 +132,13 @@ const EventEditPanel: React.FC<EventEditPanelProps> = ({
       onDelete(formData.id);
     }
   };
+
+  // Get current colors for preview - this will update when formData.type changes
+  const currentColors = React.useMemo(() => {
+    const colors = getEventTypeColors(formData.type || '');
+    console.log('EventEditPanel - Type changed to:', formData.type, 'Colors:', colors);
+    return colors;
+  }, [formData.type]);
 
   return (
     <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
@@ -175,20 +165,43 @@ const EventEditPanel: React.FC<EventEditPanelProps> = ({
           />
         </div>
 
-        {/* Tipo do Evento */}
+        {/* Tipo do Evento com Preview de Cor */}
         <div>
           <label className="block text-sm font-medium mb-1">Tipo</label>
-          <select
-            value={formData.type}
-            onChange={(e) => handleInputChange('type', e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="calculus">Cálculo</option>
-            <option value="math">Matemática</option>
-            <option value="algorithms">Algoritmos</option>
-            <option value="practices">Práticas</option>
-            <option value="challenges">Desafios</option>
-          </select>
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={formData.type || ''}
+              onChange={(e) => handleInputChange('type', e.target.value)}
+              className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Ex: Cálculo, Matemática, Programação..."
+              list="common-types"
+            />
+            <div 
+              className="w-12 h-10 rounded border-2 flex items-center justify-center text-xs font-bold"
+              key={formData.type} // Force re-render when type changes
+              style={{
+                backgroundColor: currentColors.bg,
+                borderColor: currentColors.border,
+                color: currentColors.text
+              }}
+              title="Preview da cor baseada no tipo"
+            >
+              {formData.type ? formData.type.charAt(0).toUpperCase() : '?'}
+            </div>
+          </div>
+          <datalist id="common-types">
+            <option value="Cálculo" />
+            <option value="Matemática" />
+            <option value="Programação" />
+            <option value="Física" />
+            <option value="Química" />
+            <option value="Laboratório" />
+            <option value="Práticas" />
+            <option value="Desafios" />
+            <option value="Estatística" />
+            <option value="Redes" />
+          </datalist>
         </div>
 
         {/* Data e Hora Início */}
@@ -227,7 +240,7 @@ const EventEditPanel: React.FC<EventEditPanelProps> = ({
           </label>
           <input
             type="text"
-            value={formData.room}
+            value={formData.room || ''}
             onChange={(e) => handleInputChange('room', e.target.value)}
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             placeholder="Ex: A101, Lab02"
@@ -242,7 +255,7 @@ const EventEditPanel: React.FC<EventEditPanelProps> = ({
           </label>
           <input
             type="text"
-            value={formData.professor}
+            value={formData.professor || ''}
             onChange={(e) => handleInputChange('professor', e.target.value)}
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             placeholder="Nome do professor"
@@ -259,7 +272,7 @@ const EventEditPanel: React.FC<EventEditPanelProps> = ({
             </label>
             <input
               type="text"
-              value={formData.semester}
+              value={formData.semester || ''}
               onChange={(e) => handleInputChange('semester', e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="Ex: 2024/1"
@@ -274,7 +287,7 @@ const EventEditPanel: React.FC<EventEditPanelProps> = ({
             </label>
             <input
               type="text"
-              value={formData.class}
+              value={formData.class || ''}
               onChange={(e) => handleInputChange('class', e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="Ex: A, B, C"

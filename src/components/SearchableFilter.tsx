@@ -1,3 +1,4 @@
+// src/components/SearchableFilter.tsx
 import React, { useState, useRef, useEffect } from 'react';
 import { ChevronDown, Search, X } from 'lucide-react';
 
@@ -28,13 +29,13 @@ const SearchableFilter: React.FC<SearchableFilterProps> = ({
   }, [value]);
 
   // Generate time options from 7:30 to 22:30
-const generateTimeOptions = () => {
-  const times = [];
-  for (let hour = 7; hour <= 22; hour++) {
-    times.push(`${hour.toString().padStart(2, '0')}:30`);
-  }
-  return times;
-};
+  const generateTimeOptions = () => {
+    const times = [];
+    for (let hour = 7; hour <= 22; hour++) {
+      times.push(`${hour.toString().padStart(2, '0')}:30`);
+    }
+    return times;
+  };
 
   // Sample data - replace with your actual data
   const sampleOptions = {
@@ -45,6 +46,7 @@ const generateTimeOptions = () => {
     Sala: ['A101', 'A102', 'B201', 'B202', 'C301', 'Lab01', 'Lab02'],
     Dia: ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta'],
     Turma: ['Turma A', 'Turma B', 'Turma C', 'Turma D'],
+    Tipo: ['Cálculo', 'Matemática', 'Programação', 'Física', 'Química', 'Laboratório', 'Práticas', 'Desafios', 'Estatística', 'Redes'],
     Disciplina: ['Matemática', 'Física', 'Química', 'Biologia', 'História', 'Geografia', 'Português', 'Inglês']
   };
 

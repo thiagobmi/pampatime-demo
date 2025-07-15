@@ -1,15 +1,15 @@
 // src/components/ClassCard.tsx
 import React, { useRef, useEffect } from 'react';
-import { Event, getEventTypeColors } from '@/types/Event';
+import { getEventTypeColors } from '@/types/Event';
 
 interface ClassCardProps {
   title: string;
   room?: string;
   professor?: string;
-  type: 'calculus' | 'math' | 'algorithms' | 'practices' | 'challenges';
+  type: string;
   className?: string;
   roomInfo?: string;
-  // Props para o draggable do FullCalendar
+  event?: any;
 }
 
 const ClassCard: React.FC<ClassCardProps> = ({
@@ -19,59 +19,54 @@ const ClassCard: React.FC<ClassCardProps> = ({
   type,
   className,
   roomInfo,
+  event
 }) => {
   const cardRef = useRef<HTMLDivElement>(null);
   
-  const cardClasses = {
-    calculus: 'class-card-calculus',
-    math: 'class-card-math',
-    algorithms: 'class-card-algorithms',
-    practices: 'class-card-practices',
-    challenges: 'class-card-challenges'
-  };
-  
-  // Get colors using the unified color system
+  // Generate colors dynamically based on type
   const colors = getEventTypeColors(type);
   
-  // Configuração do evento draggable - structure for FullCalendar
+  // Create event data for FullCalendar dragging
   const eventData = {
     title: title,
     backgroundColor: colors.bg,
     borderColor: colors.border,
-    textColor: '#000000',
-    // FullCalendar stores custom properties in extendedProps
+    textColor: colors.text,
     extendedProps: {
       room: room,
       professor: professor,
       type: type,
-      ...event?.extendedProps // Allow override with any passed event data
+      ...event?.extendedProps
     }
   };
   
   useEffect(() => {
     if (cardRef.current) {
-      // Adiciona o atributo data-event ao elemento
       cardRef.current.setAttribute('data-event', JSON.stringify(eventData));
     }
-  }, [eventData, title, room, professor, type, roomInfo]);
+  }, [title, room, professor, type, roomInfo, colors]);
+  
+  // Card styles with dynamic colors
+  const cardStyle = {
+    backgroundColor: colors.bg,
+    borderLeft: `4px solid ${colors.border}`,
+    color: colors.text,
+    padding: '8px',
+    borderRadius: '4px',
+    marginBottom: '8px'
+  };
   
   return (
     <div
       ref={cardRef}
-      className={`class-card ${cardClasses[type]} shadow-sm ${className || ''} cursor-move`}
-      style={{
-        backgroundColor: colors.bg,
-        borderLeft: `4px solid ${colors.border}`,
-        padding: '8px',
-        borderRadius: '4px',
-        marginBottom: '8px'
-      }}
+      className={`class-card shadow-sm ${className || ''} cursor-move`}
+      style={cardStyle}
       draggable="true"
     >
       <div className="font-medium">{title}</div>
-      {room && <div className="text-xs text-gray-700">Sala: {room}</div>}
-      {professor && <div className="text-xs text-gray-700">Professor: {professor}</div>}
-      {roomInfo && <div className="text-xs mt-1 text-gray-600">{roomInfo}</div>}
+      {room && <div className="text-xs opacity-75">Sala: {room}</div>}
+      {professor && <div className="text-xs opacity-75">Professor: {professor}</div>}
+      {roomInfo && <div className="text-xs mt-1 opacity-60">{roomInfo}</div>}
     </div>
   );
 };

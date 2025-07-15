@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import SearchableFilter from './SearchableFilter';
 import { Event, createEventWithFixedDate, getEventTypeColors, getFixedDateForDay } from '@/types/Event';
+import { ba } from 'node_modules/@fullcalendar/core/internal-common';
 
 interface FilterPanelProps {
   selectedEvent?: Event | null;
@@ -10,6 +11,20 @@ interface FilterPanelProps {
   onEventAdd?: (event: Event) => void;
   onEventDelete?: (eventId: string | number) => void;
   onClearSelection?: () => void;
+}
+
+// Internal form state interface
+interface FormState {
+  title: string;
+  professor: string;
+  semestre: string;
+  horarioInicio: string;
+  horarioFinal: string;
+  sala: string;
+  dia: string;
+  turma: string;
+  disciplina: string;
+  type: string;
 }
 
 const FilterPanel: React.FC<FilterPanelProps> = ({
@@ -20,7 +35,7 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
   onClearSelection
 }) => {
   // State to track form values
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<FormState>({
     title: '',
     professor: '',
     semestre: '',
@@ -30,7 +45,7 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
     dia: '',
     turma: '',
     disciplina: '',
-    type: 'math' as const
+    type: 'Matemática'
   });
 
   // Update form when selectedEvent changes
@@ -49,7 +64,7 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
         dia: startTime ? getDayNameFromFixedDate(startTime) : '',
         turma: selectedEvent.class || '',
         disciplina: selectedEvent.title || '',
-        type: (selectedEvent.type as any) || 'math'
+        type: selectedEvent.type || 'Matemática'
       });
     } else {
       // Clear form when no event is selected
@@ -63,7 +78,7 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
         dia: '',
         turma: '',
         disciplina: '',
-        type: 'math'
+        type: 'Matemática'
       });
     }
   }, [selectedEvent]);
@@ -79,21 +94,21 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
   };
 
   // Function to convert time string to minutes for comparison
-  const timeToMinutes = (timeString: string) => {
+  const timeToMinutes = (timeString: string): number => {
     if (!timeString) return 0;
     const [hours, minutes] = timeString.split(':').map(Number);
     return hours * 60 + minutes;
   };
 
   // Function to get available end times based on start time
-  const getAvailableEndTimes = () => {
+  const getAvailableEndTimes = (): string[] => {
     if (!formData.horarioInicio) return [];
 
     const startMinutes = timeToMinutes(formData.horarioInicio);
     const minEndMinutes = startMinutes + 60; // At least 1 hour later
 
     // Generate all possible half-hour times
-    const allTimes = [];
+    const allTimes: string[] = [];
     for (let hour = 7; hour <= 22; hour++) {
       allTimes.push(`${hour.toString().padStart(2, '0')}:30`);
     }
@@ -102,7 +117,7 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
     return allTimes.filter(time => timeToMinutes(time) >= minEndMinutes);
   };
 
-  const handleFieldChange = (field: string, value: string) => {
+  const handleFieldChange = (field: keyof FormState, value: string) => {
     setFormData(prev => {
       const newData = {
         ...prev,
@@ -128,7 +143,7 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
   };
 
   const handleAdd = () => {
-    if (selectedEvent){
+    if (selectedEvent) {
       return alert('Por favor, cancele a edição atual antes de adicionar um novo evento.');
     }
 
@@ -168,7 +183,7 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
       dia: '',
       turma: '',
       disciplina: '',
-      type: 'math'
+      type: 'Matemática'
     });
   };
 
@@ -178,7 +193,13 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
       return;
     }
 
+    if (!formData.horarioInicio || !formData.horarioFinal || !formData.dia) {
+      alert('Por favor, preencha os campos obrigatórios (Horário Início, Horário Final, Dia)');
+      return;
+    }
+
     // Create updated event using the unified function with all fields
+    console.log('SEXOOO :', formData);
     const updatedEvent = createEventWithFixedDate(
       formData.title,
       formData.dia,

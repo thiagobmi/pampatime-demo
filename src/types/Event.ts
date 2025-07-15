@@ -6,36 +6,70 @@ export interface Event {
   end?: Date | string;
   room?: string;
   professor?: string;
-  semester?: string;  // Adicionado campo semestre
-  class?: string;     // Adicionado campo turma
-  type?: 'calculus' | 'math' | 'algorithms' | 'practices' | 'challenges';
+  semester?: string;
+  class?: string;
+  type?: string;
   backgroundColor?: string;
   borderColor?: string;
   textColor?: string;
   allDay?: boolean;
 }
 
-// Event type colors mapping
-export const EVENT_TYPE_COLORS = {
-  calculus: { bg: '#d1fae5', border: '#10b981' },
-  math: { bg: '#dbeafe', border: '#3b82f6' },
-  algorithms: { bg: '#fef3c7', border: '#f59e0b' },
-  practices: { bg: '#e9d5ff', border: '#8b5cf6' },
-  challenges: { bg: '#fecaca', border: '#f87171' }
-} as const;
+export interface EventColors {
+  bg: string;
+  border: string;
+  text: string;
+}
 
-// Helper function to get colors for event type
-export const getEventTypeColors = (type: keyof typeof EVENT_TYPE_COLORS = 'math') => {
-  return EVENT_TYPE_COLORS[type] || EVENT_TYPE_COLORS.math;
+// Helper function to generate consistent colors based on string hash
+const generateColorsFromString = (str: string): EventColors => {
+  if (!str || str.trim() === '') {
+    // Default colors for empty/undefined types
+    return {
+      bg: '#f3f4f6',
+      border: '#9ca3af',
+      text: '#374151'
+    };
+  }
+  
+  // Create a hash from the string
+  let hash = 0;
+  const normalizedStr = str.toLowerCase().trim();
+  
+  for (let i = 0; i < normalizedStr.length; i++) {
+    const char = normalizedStr.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash; // Convert to 32-bit integer
+  }
+  
+  // Generate HSL color from hash
+  const hue = Math.abs(hash) % 360;
+  
+  // Use different ranges for better color distribution
+  const saturation = 45 + (Math.abs(hash >> 8) % 35); // 45-80% saturation
+  const lightness = 88; // Light background for readability
+  const borderLightness = 50; // Darker border
+  const textLightness = 25; // Dark text for contrast
+  
+  return {
+    bg: `hsl(${hue}, ${saturation}%, ${lightness}%)`,
+    border: `hsl(${hue}, ${saturation}%, ${borderLightness}%)`,
+    text: `hsl(${hue}, ${saturation}%, ${textLightness}%)`
+  };
+};
+
+// Main function to get colors for event type
+export const getEventTypeColors = (type: string = ''): EventColors => {
+  return generateColorsFromString(type);
 };
 
 // Fixed week dates - first week of 2020 (January 6-10, 2020)
 export const FIXED_WEEK_DATES = {
-  monday: new Date(2020, 0, 6),    // January 6, 2020
-  tuesday: new Date(2020, 0, 7),   // January 7, 2020
-  wednesday: new Date(2020, 0, 8), // January 8, 2020
-  thursday: new Date(2020, 0, 9),  // January 9, 2020
-  friday: new Date(2020, 0, 10)    // January 10, 2020
+  monday: new Date(2020, 0, 6),
+  tuesday: new Date(2020, 0, 7),
+  wednesday: new Date(2020, 0, 8),
+  thursday: new Date(2020, 0, 9),
+  friday: new Date(2020, 0, 10)
 } as const;
 
 // Helper function to get fixed date for a day
@@ -56,7 +90,19 @@ export const getFixedDateForDay = (dayName: string): Date => {
   return dayMap[dayName] || FIXED_WEEK_DATES.monday;
 };
 
-// Helper function to create event with fixed date
+// Helper function to apply colors to an event
+export const applyEventColors = (event: Partial<Event>): Event => {
+  const colors = getEventTypeColors(event.type || '');
+  
+  return {
+    ...event,
+    backgroundColor: colors.bg,
+    borderColor: colors.border,
+    textColor: colors.text,
+  } as Event;
+};
+
+// Helper function to create event with fixed date and auto-generated colors
 export const createEventWithFixedDate = (
   title: string,
   dayName: string,
@@ -65,14 +111,13 @@ export const createEventWithFixedDate = (
   options: {
     room?: string;
     professor?: string;
-    semester?: string;  // Adicionado parâmetro semestre
-    class?: string;     // Adicionado parâmetro turma
-    type?: keyof typeof EVENT_TYPE_COLORS;
+    semester?: string;
+    class?: string;
+    type?: string;
     id?: string | number;
   } = {}
 ): Event => {
   const baseDate = getFixedDateForDay(dayName);
-  const colors = getEventTypeColors(options.type);
   
   // Parse start time
   const [startHour, startMinute] = startTime.split(':').map(Number);
@@ -84,21 +129,22 @@ export const createEventWithFixedDate = (
   const endDate = new Date(baseDate);
   endDate.setHours(endHour, endMinute, 0, 0);
   
-  return {
+  // Create base event
+  const baseEvent: Partial<Event> = {
     id: options.id || `event-${Date.now()}-${Math.random()}`,
     title,
     start: startDate,
     end: endDate,
     room: options.room,
     professor: options.professor,
-    semester: options.semester,  // Incluído no objeto de retorno
-    class: options.class,        // Incluído no objeto de retorno
-    type: options.type || 'math',
-    backgroundColor: colors.bg,
-    borderColor: colors.border,
-    textColor: '#000000',
+    semester: options.semester,
+    class: options.class,
+    type: options.type || '',
     allDay: false,
   };
+  
+  // Apply colors and return complete event
+  return applyEventColors(baseEvent);
 };
 
 // Helper function to snap times to half-hour slots (7:30 based)
@@ -107,10 +153,8 @@ export const snapToHalfHour = (date: Date): Date => {
   const hours = date.getHours();
   const minutes = date.getMinutes();
   
-  // If minutes are less than 15, snap to the previous :30
   if (minutes < 15) {
     if (hours === 0) {
-      // Special case: very early morning
       roundedDate.setHours(0);
       roundedDate.setMinutes(30, 0, 0);
     } else {
@@ -118,11 +162,9 @@ export const snapToHalfHour = (date: Date): Date => {
       roundedDate.setMinutes(30, 0, 0);
     }
   } 
-  // If minutes are between 15 and 45, snap to the current hour's :30
   else if (minutes >= 15 && minutes < 45) {
     roundedDate.setMinutes(30, 0, 0);
   } 
-  // If minutes are 45 or more, snap to the next hour's :30
   else {
     roundedDate.setHours(hours + 1);
     roundedDate.setMinutes(30, 0, 0);
