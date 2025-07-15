@@ -12,7 +12,7 @@ interface Event {
   professor?: string;
   semester?: string;  // Adicionado campo semestre
   class?: string;     // Adicionado campo turma
-  type?: 'calculus' | 'math' | 'algorithms' | 'practices' | 'challenges';
+  type?: string; // 'calculus' | 'math' | 'algorithms' | 'practices' | 'challenges'
   backgroundColor?: string;
   borderColor?: string;
 }
@@ -40,7 +40,7 @@ const EventEditPanel: React.FC<EventEditPanelProps> = ({
     professor: '',
     semester: '',    // Adicionado ao estado inicial
     class: '',       // Adicionado ao estado inicial
-    type: 'math'
+    type: ''
   });
 
   // Event type colors
@@ -80,7 +80,7 @@ const EventEditPanel: React.FC<EventEditPanelProps> = ({
         professor: selectedEvent.professor || '',
         semester: selectedEvent.semester || '',  // Recupera o semestre
         class: selectedEvent.class || '',        // Recupera a turma
-        type: selectedEvent.type || 'math'
+        type: selectedEvent.type || 'vazio :('
       });
     } else {
       // Reset form for new event

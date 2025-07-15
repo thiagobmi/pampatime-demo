@@ -1,4 +1,4 @@
-// src/components/Timetable.tsx
+// src/components/EventCalendar.tsx
 import React from 'react';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
@@ -12,11 +12,16 @@ import { createEventContent } from '@/utils/calendarUtils';
 interface Event {
     title: string;
     room?: string;
-    teacher?: string;
+    professor?: string;
     start: Date | string;
     allDay: boolean;
     id: number;
     end?: Date | string;
+    backgroundColor?: string;
+    borderColor?: string;
+    semester?: string;
+    class?: string;
+    type?: string;
 }
 
 interface EventCalendarProps {
@@ -26,13 +31,11 @@ interface EventCalendarProps {
     onEventResize?: (info: any) => void;
     onEventClick?: (info: any) => void;
 }
+
 const renderDayHeaderContent = (arg: any) => {
-
     const englishAbbr = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
-
     const ptDays = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
     
-    // Obtém o índice do dia da semana (0-6)
     const dayIndex = arg.date.getDay();
     
     return {
@@ -43,8 +46,7 @@ const renderDayHeaderContent = (arg: any) => {
         </div>
       `
     };
-  };
-
+};
 
 export const EventCalendar: React.FC<EventCalendarProps> = ({
     events,
@@ -59,10 +61,8 @@ export const EventCalendar: React.FC<EventCalendarProps> = ({
         const hours = date.getHours();
         const minutes = date.getMinutes();
         
-        // If minutes are less than 15, snap to the previous :30
         if (minutes < 15) {
             if (hours === 0) {
-                // Special case: very early morning
                 roundedDate.setHours(0);
                 roundedDate.setMinutes(30, 0, 0);
             } else {
@@ -70,11 +70,9 @@ export const EventCalendar: React.FC<EventCalendarProps> = ({
                 roundedDate.setMinutes(30, 0, 0);
             }
         } 
-        // If minutes are between 15 and 45, snap to the current hour's :30
         else if (minutes >= 15 && minutes < 45) {
             roundedDate.setMinutes(30, 0, 0);
         } 
-        // If minutes are 45 or more, snap to the next hour's :30
         else {
             roundedDate.setHours(hours + 1);
             roundedDate.setMinutes(30, 0, 0);
@@ -83,13 +81,39 @@ export const EventCalendar: React.FC<EventCalendarProps> = ({
         return roundedDate;
     };
 
+    // Transform events to ensure properties are preserved in extendedProps
+    const transformedEvents = events.map(event => {
+        console.log('Original event:', event);
+        
+        const transformedEvent = {
+            id: event.id,
+            title: event.title,
+            start: event.start,
+            end: event.end,
+            backgroundColor: event.backgroundColor,
+            borderColor: event.borderColor,
+            allDay: event.allDay || false,
+            // FullCalendar preserves custom properties in extendedProps
+            extendedProps: {
+                professor: event.professor,
+                room: event.room,
+                semester: event.semester,
+                class: event.class,
+                type: event.type
+            }
+        };
+        
+        console.log('Transformed for FullCalendar:', transformedEvent);
+        return transformedEvent;
+    });
+
     return (
         <FullCalendar
             {...calendarConfig}
             plugins={[interactionPlugin, timeGridPlugin, listPlugin, dayGridPlugin]}
             locale={ptBrLocale}
-            events={events}
-            slotEventOverlap={false} // Evita sobreposição de eventos
+            events={transformedEvents}
+            slotEventOverlap={false}
             eventContent={createEventContent}
             eventReceive={onEventReceive}
             eventDrop={onEventDrop}
@@ -98,31 +122,27 @@ export const EventCalendar: React.FC<EventCalendarProps> = ({
             height="100%"
             dayHeaderContent={renderDayHeaderContent}
             
-
             eventResizeStart={(info) => {
-                // Apply half-hour snapping at the start of resize
                 if (info.event.start) {
                     const snappedStart = snapToHalfHour(info.event.start);
                     info.event.setStart(snappedStart);
                 }
             }}
             eventResizeStop={(info) => {
-                // Apply half-hour snapping at the end of resize
                 if (info.event.end) {
                     const snappedEnd = snapToHalfHour(info.event.end);
                     info.event.setEnd(snappedEnd);
                 }
                 
-                // Also ensure start time is on half-hour boundary
                 if (info.event.start) {
                     const snappedStart = snapToHalfHour(info.event.start);
                     info.event.setStart(snappedStart);
                 }
             }}
             eventConstraint={{
-                startTime: "07:30", // Limita eventos dentro do dia
+                startTime: "07:30",
                 endTime: "22:30",
-              }}
+            }}
         />
     );
 };

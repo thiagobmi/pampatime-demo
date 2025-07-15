@@ -1,4 +1,3 @@
-
 import * as React from 'react';
 
 export const formatEventTime = (date: Date) => {
@@ -9,8 +8,12 @@ export const createEventContent = (eventInfo: any) => {
   const start = eventInfo.event.start;
   const end = eventInfo.event.end || new Date(start.getTime() + 60*60*1000);
   
-  const teacher = eventInfo.event.teacher;
-  const room = eventInfo.event.room;
+  // Access properties from extendedProps (this is where FullCalendar stores custom properties)
+  const professor = eventInfo.event.extendedProps?.professor;
+  const room = eventInfo.event.extendedProps?.room;
+  
+  console.log('Event content - professor:', professor, 'room:', room);
+  console.log('Full extendedProps:', eventInfo.event.extendedProps);
   
   const startTime = formatEventTime(start);
   const endTime = formatEventTime(end);
@@ -34,11 +37,11 @@ export const createEventContent = (eventInfo: any) => {
     >
       <div className='text-sm truncate'><b>{startTime} - {endTime}</b></div>
       <div className='font-bold truncate'>{eventInfo.event.title}</div>
-      {showDetails && teacher && 
-        <div className='truncate'><b>{teacher}</b></div>
+      {showDetails && professor && 
+        <div className='truncate text-xs'><b>{professor}</b></div>
       }
       {showDetails && room && 
-        <div className='truncate'><b>{room}</b></div>
+        <div className='truncate text-xs'><b>{room}</b></div>
       }
     </div>
   );

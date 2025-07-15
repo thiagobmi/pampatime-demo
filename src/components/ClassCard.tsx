@@ -10,7 +10,6 @@ interface ClassCardProps {
   className?: string;
   roomInfo?: string;
   // Props para o draggable do FullCalendar
-  event?: Partial<Event>;
 }
 
 const ClassCard: React.FC<ClassCardProps> = ({
@@ -20,7 +19,6 @@ const ClassCard: React.FC<ClassCardProps> = ({
   type,
   className,
   roomInfo,
-  event
 }) => {
   const cardRef = useRef<HTMLDivElement>(null);
   
@@ -35,13 +33,19 @@ const ClassCard: React.FC<ClassCardProps> = ({
   // Get colors using the unified color system
   const colors = getEventTypeColors(type);
   
-  // Configuração do evento draggable
-  const eventData: Partial<Event> = {
+  // Configuração do evento draggable - structure for FullCalendar
+  const eventData = {
     title: title,
     backgroundColor: colors.bg,
     borderColor: colors.border,
     textColor: '#000000',
-    ...event // Allow override with any passed event data
+    // FullCalendar stores custom properties in extendedProps
+    extendedProps: {
+      room: room,
+      professor: professor,
+      type: type,
+      ...event?.extendedProps // Allow override with any passed event data
+    }
   };
   
   useEffect(() => {

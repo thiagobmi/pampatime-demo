@@ -11,8 +11,8 @@ interface Event {
   end?: Date | string;
   room?: string;
   professor?: string;
-  semester?: string;  // Adicionado campo semestre
-  class?: string;     // Adicionado campo turma
+  semester?: string;
+  class?: string;
   type?: string;
   backgroundColor?: string;
   borderColor?: string;
@@ -37,72 +37,72 @@ const Timetable = forwardRef<TimetableRef, TimetableProps>(({ onEventClick }, re
   const handleEventClick = (info: any) => {
     console.log('Evento clicado:', info.event);
     
-    // Corrigido: Extrair todas as propriedades do evento, incluindo semestre e turma
+    // Extract all properties from the FullCalendar event
     const eventData: Event = {
       id: info.event.id,
       title: info.event.title,
       start: info.event.start,
       end: info.event.end,
-      room: info.event.room,
-      professor: info.event.professor,
-      semester: info.event.semester,  // Adicionado
-      class: info.event.class,        // Adicionado
-      type: info.event.type,
+      room: info.event.extendedProps?.room,
+      professor: info.event.extendedProps?.professor,
+      semester: info.event.extendedProps?.semester,
+      class: info.event.extendedProps?.class,
+      type: info.event.extendedProps?.type,
       backgroundColor: info.event.backgroundColor,
       borderColor: info.event.borderColor,
     };
     
-    console.log('Dados do evento passados para edição:', eventData);
     
     if (onEventClick) {
       onEventClick(eventData);
     }
   };
 
-  
   const handleEventDrop = (info: any) => {
-    console.log('Evento movido:', info.event);
-    const updatedEvents = [...events];
-    const eventIndex = updatedEvents.findIndex(e => e.id === info.event.id);
     
-    if (eventIndex !== -1) {
-      updatedEvents[eventIndex] = {
-        ...updatedEvents[eventIndex],
-        start: info.event.start,
-        end: info.event.end
-      };
-
-
-      setEvents(updatedEvents);
-    }
+    console.log('Evento movido:', info.event);
+    setEvents(prevEvents => 
+      prevEvents.map(event => 
+        event.id === info.event.id 
+          ? {
+              ...event,
+              start: info.event.start,
+              end: info.event.end
+            }
+          : event
+      )
+    );
   };
 
   const handleEventResize = (info: any) => {
     console.log('Evento redimensionado:', info.event);
-    const updatedEvents = [...events];
-    const eventIndex = updatedEvents.findIndex(e => e.id === info.event.id);
-    
-    if (eventIndex !== -1) {
-      updatedEvents[eventIndex] = {
-        ...updatedEvents[eventIndex],
-        end: info.event.end
-      };
-      setEvents(updatedEvents);
-    }
+    setEvents(prevEvents => 
+      prevEvents.map(event => 
+        event.id === info.event.id 
+          ? {
+              ...event,
+              start: info.event.start,
+              end: info.event.end
+            }
+          : event
+      )
+    );
   };
 
   const handleEventReceive = (info: any) => {
     console.log('Evento recebido:', info.event);
+    
+    // Create a complete event object with all properties
     const newEvent: Event = {
       id: info.event.id || `event-${Date.now()}`,
       title: info.event.title || 'New Event',
       start: info.event.start,
       end: info.event.end,
-      room: info.event.room,
-      professor: info.event.professor,
-      semester: info.event.semester,  // Adicionado
-      class: info.event.class,        // Adicionado
-      type: info.event.type,
+      room: info.event.extendedProps?.room,
+      professor: info.event.extendedProps?.professor,
+      semester: info.event.extendedProps?.semester,
+      class: info.event.extendedProps?.class,
+      type: info.event.extendedProps?.type,
       backgroundColor: info.event.backgroundColor || '#3788d8',
       borderColor: info.event.borderColor || '#3788d8',
     };
