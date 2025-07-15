@@ -3,7 +3,6 @@ import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import SearchableFilter from './SearchableFilter';
 import { Event, createEventWithFixedDate, getEventTypeColors, getFixedDateForDay } from '@/types/Event';
-import { ba } from 'node_modules/@fullcalendar/core/internal-common';
 
 interface FilterPanelProps {
   selectedEvent?: Event | null;
@@ -23,8 +22,7 @@ interface FormState {
   sala: string;
   dia: string;
   turma: string;
-  disciplina: string;
-  type: string;
+  type: string; // This should be separate from title
 }
 
 const FilterPanel: React.FC<FilterPanelProps> = ({
@@ -44,8 +42,7 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
     sala: '',
     dia: '',
     turma: '',
-    disciplina: '',
-    type: 'Matemática'
+    type: '' // Default empty, user should select this separately
   });
 
   // Update form when selectedEvent changes
@@ -63,8 +60,7 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
         sala: selectedEvent.room || '',
         dia: startTime ? getDayNameFromFixedDate(startTime) : '',
         turma: selectedEvent.class || '',
-        disciplina: selectedEvent.title || '',
-        type: selectedEvent.type || 'Matemática'
+        type: selectedEvent.type || '' // Keep the existing type
       });
     } else {
       // Clear form when no event is selected
@@ -77,8 +73,7 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
         sala: '',
         dia: '',
         turma: '',
-        disciplina: '',
-        type: 'Matemática'
+        type: ''
       });
     }
   }, [selectedEvent]);
@@ -133,10 +128,8 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
         }
       }
 
-      // Update title when disciplina changes
-      if (field === 'disciplina') {
-        newData.title = value;
-      }
+      // DO NOT automatically update title when type changes
+      // Title and type should be independent
 
       return newData;
     });
@@ -148,7 +141,7 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
     }
 
     if (!formData.title || !formData.horarioInicio || !formData.horarioFinal || !formData.dia) {
-      alert('Por favor, preencha todos os campos obrigatórios (Disciplina, Horário Início, Horário Final, Dia)');
+      alert('Por favor, preencha todos os campos obrigatórios (Título, Horário Início, Horário Final, Dia)');
       return;
     }
 
@@ -163,7 +156,7 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
         professor: formData.professor,
         semester: formData.semestre,
         class: formData.turma,
-        type: formData.type,
+        type: formData.type, // Type is separate from title
         id: `event-${Date.now()}`
       }
     );
@@ -182,8 +175,7 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
       sala: '',
       dia: '',
       turma: '',
-      disciplina: '',
-      type: 'Matemática'
+      type: ''
     });
   };
 
@@ -199,7 +191,6 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
     }
 
     // Create updated event using the unified function with all fields
-    console.log('SEXOOO :', formData);
     const updatedEvent = createEventWithFixedDate(
       formData.title,
       formData.dia,
@@ -210,7 +201,7 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
         professor: formData.professor,
         semester: formData.semestre,
         class: formData.turma,
-        type: formData.type,
+        type: formData.type, // Type is separate from title
         id: selectedEvent.id
       }
     );
@@ -258,6 +249,18 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
       )}
 
       <div className="space-y-2 mb-3">
+        {/* Title as first field - editable input */}
+        <div className="w-full">
+          <label className="block text-sm font-medium mb-1 text-gray-700">Nome</label>
+          <input
+            type="text"
+            value={formData.title}
+            onChange={(e) => handleFieldChange('title', e.target.value)}
+            placeholder="Digite o título do evento"
+            className="w-full px-3 py-2 bg-white border border-gray-300 rounded-md cursor-text hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+          />
+        </div>
+        
         <div className="grid grid-cols-2 gap-2">
           <SearchableFilter
             label="Professor"
@@ -302,10 +305,9 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
             onSelect={(value) => handleFieldChange('turma', value)}
           />
           <SearchableFilter
-            label="Disciplina"
-            value={formData.disciplina}
-            className="w-full"
-            onSelect={(value) => handleFieldChange('disciplina', value)}
+            label="Tipo"
+            value={formData.type}
+            onSelect={(value) => handleFieldChange('type', value)}
           />
         </div>
       </div>
