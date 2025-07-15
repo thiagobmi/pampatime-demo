@@ -42,14 +42,12 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
       setFormData({
         title: selectedEvent.title || '',
         professor: selectedEvent.professor || '',
-        // Corrigido: buscar semestre tanto da propriedade direta quanto de extendedProps
-        semestre: selectedEvent.semester || selectedEvent.extendedProps?.semester || '',
+        semestre: selectedEvent.semester || '',
         horarioInicio: startTime ? formatTimeForInput(startTime) : '',
         horarioFinal: endTime ? formatTimeForInput(endTime) : '',
         sala: selectedEvent.room || '',
         dia: startTime ? getDayNameFromFixedDate(startTime) : '',
-        // Corrigido: buscar turma tanto da propriedade direta quanto de extendedProps
-        turma: selectedEvent.class || selectedEvent.extendedProps?.class || '',
+        turma: selectedEvent.class || '',
         disciplina: selectedEvent.title || '',
         type: (selectedEvent.type as any) || 'math'
       });
@@ -148,8 +146,8 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
       {
         room: formData.sala,
         professor: formData.professor,
-        semester: formData.semestre,    // Incluído semestre
-        class: formData.turma,          // Incluído turma
+        semester: formData.semestre,
+        class: formData.turma,
         type: formData.type,
         id: `event-${Date.now()}`
       }
@@ -189,8 +187,8 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
       {
         room: formData.sala,
         professor: formData.professor,
-        semester: formData.semestre,    // Incluído semestre na edição
-        class: formData.turma,          // Incluído turma na edição
+        semester: formData.semestre,
+        class: formData.turma,
         type: formData.type,
         id: selectedEvent.id
       }
@@ -220,16 +218,11 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
         <div className="mb-3 p-2 bg-blue-50 rounded border-l-4 border-blue-500">
           <div className="text-sm font-medium text-blue-800">Editando Evento</div>
           <div className="text-xs text-blue-600">{selectedEvent.title}</div>
-          {/* Corrigido: Mostrar semestre e turma de ambas as fontes */}
-          {((selectedEvent.semester || selectedEvent.extendedProps?.semester) || 
-            (selectedEvent.class || selectedEvent.extendedProps?.class)) && (
+          {(selectedEvent.semester || selectedEvent.class) && (
             <div className="text-xs text-blue-500 mt-1">
-              {(selectedEvent.semester || selectedEvent.extendedProps?.semester) && 
-                `Semestre: ${selectedEvent.semester || selectedEvent.extendedProps?.semester}`}
-              {(selectedEvent.semester || selectedEvent.extendedProps?.semester) && 
-               (selectedEvent.class || selectedEvent.extendedProps?.class) && ' • '}
-              {(selectedEvent.class || selectedEvent.extendedProps?.class) && 
-                `Turma: ${selectedEvent.class || selectedEvent.extendedProps?.class}`}
+              {selectedEvent.semester && `Semestre: ${selectedEvent.semester}`}
+              {selectedEvent.semester && selectedEvent.class && ' • '}
+              {selectedEvent.class && `Turma: ${selectedEvent.class}`}
             </div>
           )}
           <Button
@@ -324,16 +317,6 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
           Excluir
         </Button>
       </div>
-
-      {/* Debug info mostrando os valores atuais
-      {selectedEvent && (
-        <div className="mt-2 text-xs text-gray-500 border-t pt-2">
-          <div>Valores carregados:</div>
-          <div>Semestre: {formData.semestre || 'Não definido'}</div>
-          <div>Turma: {formData.turma || 'Não definido'}</div>
-          <div>Professor: {formData.professor || 'Não definido'}</div>
-        </div>
-      )} */}
     </div>
   );
 };

@@ -13,14 +13,6 @@ export interface Event {
   borderColor?: string;
   textColor?: string;
   allDay?: boolean;
-  extendedProps?: {
-    room?: string;
-    professor?: string;
-    type?: string;
-    roomInfo?: string;
-    semester?: string;
-    class?: string;
-  };
 }
 
 // Event type colors mapping
@@ -106,13 +98,6 @@ export const createEventWithFixedDate = (
     borderColor: colors.border,
     textColor: '#000000',
     allDay: false,
-    extendedProps: {
-      room: options.room,
-      professor: options.professor,
-      type: options.type || 'math',
-      semester: options.semester,
-      class: options.class
-    }
   };
 };
 

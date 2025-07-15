@@ -16,14 +16,6 @@ interface Event {
   type?: string;
   backgroundColor?: string;
   borderColor?: string;
-  extendedProps?: {
-    room?: string;
-    professor?: string;
-    type?: string;
-    roomInfo?: string;
-    semester?: string;
-    class?: string;
-  };
 }
 
 interface TimetableProps {
@@ -51,14 +43,13 @@ const Timetable = forwardRef<TimetableRef, TimetableProps>(({ onEventClick }, re
       title: info.event.title,
       start: info.event.start,
       end: info.event.end,
-      room: info.event.extendedProps?.room,
-      professor: info.event.extendedProps?.professor,
-      semester: info.event.extendedProps?.semester,  // Adicionado
-      class: info.event.extendedProps?.class,        // Adicionado
-      type: info.event.extendedProps?.type,
+      room: info.event.room,
+      professor: info.event.professor,
+      semester: info.event.semester,  // Adicionado
+      class: info.event.class,        // Adicionado
+      type: info.event.type,
       backgroundColor: info.event.backgroundColor,
       borderColor: info.event.borderColor,
-      extendedProps: info.event.extendedProps
     };
     
     console.log('Dados do evento passados para edição:', eventData);
@@ -107,14 +98,13 @@ const Timetable = forwardRef<TimetableRef, TimetableProps>(({ onEventClick }, re
       title: info.event.title || 'New Event',
       start: info.event.start,
       end: info.event.end,
-      room: info.event.extendedProps?.room,
-      professor: info.event.extendedProps?.professor,
-      semester: info.event.extendedProps?.semester,  // Adicionado
-      class: info.event.extendedProps?.class,        // Adicionado
-      type: info.event.extendedProps?.type,
+      room: info.event.room,
+      professor: info.event.professor,
+      semester: info.event.semester,  // Adicionado
+      class: info.event.class,        // Adicionado
+      type: info.event.type,
       backgroundColor: info.event.backgroundColor || '#3788d8',
       borderColor: info.event.borderColor || '#3788d8',
-      extendedProps: info.event.extendedProps
     };
 
     setEvents(prevEvents => [...prevEvents, newEvent]);

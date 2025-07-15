@@ -27,9 +27,9 @@ interface EventCalendarProps {
     onEventClick?: (info: any) => void;
 }
 const renderDayHeaderContent = (arg: any) => {
-    // Abreviações em inglês dos dias da semana
+
     const englishAbbr = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
-    // Dias da semana em português
+
     const ptDays = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
     
     // Obtém o índice do dia da semana (0-6)

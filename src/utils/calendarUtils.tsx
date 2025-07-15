@@ -9,8 +9,8 @@ export const createEventContent = (eventInfo: any) => {
   const start = eventInfo.event.start;
   const end = eventInfo.event.end || new Date(start.getTime() + 60*60*1000);
   
-  const teacher = eventInfo.event.extendedProps?.teacher;
-  const room = eventInfo.event.extendedProps?.room;
+  const teacher = eventInfo.event.teacher;
+  const room = eventInfo.event.room;
   
   const startTime = formatEventTime(start);
   const endTime = formatEventTime(end);

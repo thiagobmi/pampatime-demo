@@ -41,12 +41,6 @@ const ClassCard: React.FC<ClassCardProps> = ({
     backgroundColor: colors.bg,
     borderColor: colors.border,
     textColor: '#000000',
-    extendedProps: {
-      room,
-      professor,
-      type,
-      roomInfo
-    },
     ...event // Allow override with any passed event data
   };
   

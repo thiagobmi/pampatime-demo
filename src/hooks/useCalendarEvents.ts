@@ -69,8 +69,8 @@ export function useCalendarEvents() {
     const snappedStart = snapToHalfHour(startDate);
     
     // Properly access extendedProps
-    const teacher = info.event.extendedProps.teacher || '';
-    const room = info.event.extendedProps.room || '';
+    const teacher = info.event.teacher || '';
+    const room = info.event.room || '';
     const backgroundColor = info.event.backgroundColor || '';
     
     // Get the original ID (important: make sure it's a number)

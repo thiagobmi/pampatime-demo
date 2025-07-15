@@ -1,12 +1,10 @@
 import logo from '../assets/logo.png';
 import { FiClock } from 'react-icons/fi';
 import { Link } from 'react-router-dom';
-import History from '@/pages/History';
-import HomeDashboard from '@/pages/HomeDashboard';
 
 const Header = () => {
   return (
-    <header className="font-normal fixed top-0 left-0 w-full z-[1000] bg-white px-8 py-4">
+    <header className="font-normal bg-white px-8 py-4 border-b border-gray-200">
       <nav className="max-w-[1200px] mx-auto flex justify-between items-center relative">
 
         <div className="flex gap-8 text-gray-600 text-sm">
