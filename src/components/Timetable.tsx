@@ -20,6 +20,7 @@ interface Event {
 
 interface TimetableProps {
   onEventClick?: (event: Event) => void;
+  onEventChange?: (event: Event) => void; // Nova prop para mudanças em tempo real
 }
 
 interface TimetableRef {
@@ -28,30 +29,36 @@ interface TimetableRef {
   deleteEvent: (eventId: string | number) => void;
 }
 
-const Timetable = forwardRef<TimetableRef, TimetableProps>(({ onEventClick }, ref) => {
+const Timetable = forwardRef<TimetableRef, TimetableProps>(({ onEventClick, onEventChange }, ref) => {
   // Events state
   const [events, setEvents] = useState<Event[]>([]);
+  const [selectedEventId, setSelectedEventId] = useState<string | number | null>(null);
+  
   console.log('Eventos:', events);
+
+  // Helper function to create event data from FullCalendar event
+  const createEventDataFromFullCalendar = (fcEvent: any): Event => {
+    return {
+      id: fcEvent.id,
+      title: fcEvent.title,
+      start: fcEvent.start,
+      end: fcEvent.end,
+      room: fcEvent.extendedProps?.room,
+      professor: fcEvent.extendedProps?.professor,
+      semester: fcEvent.extendedProps?.semester,
+      class: fcEvent.extendedProps?.class,
+      type: fcEvent.extendedProps?.type,
+      backgroundColor: fcEvent.backgroundColor,
+      borderColor: fcEvent.borderColor,
+    };
+  };
 
   // Handle event click - pass the event data to parent
   const handleEventClick = (info: any) => {
     console.log('Evento clicado:', info.event);
     
-    // Extract all properties from the FullCalendar event
-    const eventData: Event = {
-      id: info.event.id,
-      title: info.event.title,
-      start: info.event.start,
-      end: info.event.end,
-      room: info.event.extendedProps?.room,
-      professor: info.event.extendedProps?.professor,
-      semester: info.event.extendedProps?.semester,
-      class: info.event.extendedProps?.class,
-      type: info.event.extendedProps?.type,
-      backgroundColor: info.event.backgroundColor,
-      borderColor: info.event.borderColor,
-    };
-    
+    const eventData = createEventDataFromFullCalendar(info.event);
+    setSelectedEventId(eventData.id);
     
     if (onEventClick) {
       onEventClick(eventData);
@@ -59,8 +66,9 @@ const Timetable = forwardRef<TimetableRef, TimetableProps>(({ onEventClick }, re
   };
 
   const handleEventDrop = (info: any) => {
-    
     console.log('Evento movido:', info.event);
+    
+    // Atualizar o estado interno
     setEvents(prevEvents => 
       prevEvents.map(event => 
         event.id === info.event.id 
@@ -72,10 +80,19 @@ const Timetable = forwardRef<TimetableRef, TimetableProps>(({ onEventClick }, re
           : event
       )
     );
+
+    // Se este evento está selecionado, notificar mudança em tempo real
+    if (selectedEventId === info.event.id && onEventChange) {
+      const updatedEventData = createEventDataFromFullCalendar(info.event);
+      console.log('Notificando mudança em tempo real:', updatedEventData);
+      onEventChange(updatedEventData);
+    }
   };
 
   const handleEventResize = (info: any) => {
     console.log('Evento redimensionado:', info.event);
+    
+    // Atualizar o estado interno
     setEvents(prevEvents => 
       prevEvents.map(event => 
         event.id === info.event.id 
@@ -87,6 +104,45 @@ const Timetable = forwardRef<TimetableRef, TimetableProps>(({ onEventClick }, re
           : event
       )
     );
+
+    // Se este evento está selecionado, notificar mudança em tempo real
+    if (selectedEventId === info.event.id && onEventChange) {
+      const updatedEventData = createEventDataFromFullCalendar(info.event);
+      console.log('Notificando redimensionamento em tempo real:', updatedEventData);
+      onEventChange(updatedEventData);
+    }
+  };
+
+  // Novo handler para capturar durante o drag (em tempo real)
+  const handleEventDragStart = (info: any) => {
+    console.log('Iniciou drag do evento:', info.event);
+    setSelectedEventId(info.event.id);
+  };
+
+  const handleEventDragStop = (info: any) => {
+    console.log('Finalizou drag do evento:', info.event);
+    
+    // Notificar mudança final
+    if (onEventChange) {
+      const updatedEventData = createEventDataFromFullCalendar(info.event);
+      onEventChange(updatedEventData);
+    }
+  };
+
+  // Novo handler para capturar durante resize
+  const handleEventResizeStart = (info: any) => {
+    console.log('Iniciou resize do evento:', info.event);
+    setSelectedEventId(info.event.id);
+  };
+
+  const handleEventResizeStop = (info: any) => {
+    console.log('Finalizou resize do evento:', info.event);
+    
+    // Notificar mudança final
+    if (onEventChange) {
+      const updatedEventData = createEventDataFromFullCalendar(info.event);
+      onEventChange(updatedEventData);
+    }
   };
 
   const handleEventReceive = (info: any) => {
@@ -132,6 +188,11 @@ const Timetable = forwardRef<TimetableRef, TimetableProps>(({ onEventClick }, re
     setEvents(prevEvents => 
       prevEvents.filter(event => event.id !== eventId)
     );
+    
+    // Se o evento deletado estava selecionado, limpar seleção
+    if (selectedEventId === eventId) {
+      setSelectedEventId(null);
+    }
   };
 
   // Expose functions to parent component
@@ -184,6 +245,11 @@ const Timetable = forwardRef<TimetableRef, TimetableProps>(({ onEventClick }, re
             onEventDrop={handleEventDrop}
             onEventResize={handleEventResize}
             onEventReceive={handleEventReceive}
+            // Novos handlers para capturar mudanças em tempo real
+            onEventDragStart={handleEventDragStart}
+            onEventDragStop={handleEventDragStop}
+            onEventResizeStart={handleEventResizeStart}
+            onEventResizeStop={handleEventResizeStop}
           />
         </div>
       </div>

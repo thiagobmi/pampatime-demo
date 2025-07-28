@@ -10,6 +10,7 @@ interface SidePanelProps {
   onEventAdd?: (event: Event) => void;
   onEventDelete?: (eventId: string | number) => void;
   onClearSelection?: () => void;
+  onEventChange?: (event: Event) => void; // Nova prop para mudanças em tempo real
 }
 
 const SidePanel: React.FC<SidePanelProps> = ({
@@ -17,7 +18,8 @@ const SidePanel: React.FC<SidePanelProps> = ({
   onEventUpdate,
   onEventAdd,
   onEventDelete,
-  onClearSelection
+  onClearSelection,
+  onEventChange // Nova prop
 }) => {
   return (
     <div className="flex flex-col h-full space-y-3 overflow-hidden">
@@ -28,6 +30,7 @@ const SidePanel: React.FC<SidePanelProps> = ({
           onEventAdd={onEventAdd}
           onEventDelete={onEventDelete}
           onClearSelection={onClearSelection}
+          onEventChange={onEventChange} // Passando para o FilterPanel
         />
       </div>
       <div className="flex-1 min-h-0 overflow-hidden">

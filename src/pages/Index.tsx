@@ -1,6 +1,5 @@
 // src/pages/Index.tsx
 import React, { useState, useRef } from 'react';
-// import Navbar from '@/components/Navbar';
 import SidePanel from '@/components/SidePanel';
 import Timetable from '@/components/Timetable';
 import { Event } from '@/types/Event';
@@ -12,11 +11,29 @@ const Index = () => {
 
   // Handle event click from calendar
   const handleEventClick = (event: Event) => {
+    console.log('Index: Evento clicado', event);
     setSelectedEvent(event);
+  };
+
+  // Handle event changes in real-time (drag, resize)
+  const handleEventChange = (updatedEvent: Event) => {
+    console.log('Index: Evento alterado em tempo real', updatedEvent);
+    
+    // Atualizar o selectedEvent se for o mesmo evento
+    if (selectedEvent && selectedEvent.id === updatedEvent.id) {
+      setSelectedEvent(updatedEvent);
+    }
+    
+    // Também atualizar no Timetable
+    if (timetableRef.current && timetableRef.current.updateEvent) {
+      timetableRef.current.updateEvent(updatedEvent);
+    }
   };
 
   // Handle event update from form
   const handleEventUpdate = (updatedEvent: Event) => {
+    console.log('Index: Atualizando evento via formulário', updatedEvent);
+    
     // Update the event in the calendar
     if (timetableRef.current && timetableRef.current.updateEvent) {
       timetableRef.current.updateEvent(updatedEvent);
@@ -27,6 +44,8 @@ const Index = () => {
 
   // Handle event add from form
   const handleEventAdd = (newEvent: Event) => {
+    console.log('Index: Adicionando novo evento', newEvent);
+    
     // Add the event to the calendar
     if (timetableRef.current && timetableRef.current.addEvent) {
       timetableRef.current.addEvent(newEvent);
@@ -35,6 +54,8 @@ const Index = () => {
 
   // Handle event delete from form
   const handleEventDelete = (eventId: string | number) => {
+    console.log('Index: Deletando evento', eventId);
+    
     // Delete the event from the calendar
     if (timetableRef.current && timetableRef.current.deleteEvent) {
       timetableRef.current.deleteEvent(eventId);
@@ -60,6 +81,7 @@ const Index = () => {
               onEventAdd={handleEventAdd}
               onEventDelete={handleEventDelete}
               onClearSelection={handleClearSelection}
+              onEventChange={handleEventChange} // Nova prop para mudanças em tempo real
             />
           </div>
           
@@ -67,6 +89,7 @@ const Index = () => {
             <Timetable 
               ref={timetableRef}
               onEventClick={handleEventClick}
+              onEventChange={handleEventChange} // Nova prop para mudanças em tempo real
             />
           </div>
         </div>
