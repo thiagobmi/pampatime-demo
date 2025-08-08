@@ -1,8 +1,9 @@
-import React, { forwardRef, useImperativeHandle } from 'react';
+import React, { forwardRef, useImperativeHandle, useRef } from 'react';
 import { ChevronLeft, ChevronRight, Search } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { useState } from 'react';
 import { EventCalendar } from './EventCalendar';
+import { getEventTypeColors } from '@/types/Event';
 
 interface Event {
   id?: string | number;
@@ -20,21 +21,72 @@ interface Event {
 
 interface TimetableProps {
   onEventClick?: (event: Event) => void;
-  onEventChange?: (event: Event) => void; // Nova prop para mudanças em tempo real
+  onEventChange?: (event: Event) => void;
+  onEventsChange?: (events: Event[]) => void; // Nova prop para notificar mudanças na lista de eventos
 }
 
 interface TimetableRef {
   addEvent: (event: Event) => void;
   updateEvent: (event: Event) => void;
   deleteEvent: (eventId: string | number) => void;
+  getEvents: () => Event[]; // Nova função para obter eventos
 }
 
-const Timetable = forwardRef<TimetableRef, TimetableProps>(({ onEventClick, onEventChange }, ref) => {
+const Timetable = forwardRef<TimetableRef, TimetableProps>(({ onEventClick, onEventChange, onEventsChange }, ref) => {
   // Events state
   const [events, setEvents] = useState<Event[]>([]);
   const [selectedEventId, setSelectedEventId] = useState<string | number | null>(null);
+  const processedEventsRef = useRef(new Set<string>()); // Track processed events
   
   console.log('Eventos:', events);
+
+  // Notify parent when events change
+  const notifyEventsChange = (newEvents: Event[]) => {
+    if (onEventsChange) {
+      onEventsChange(newEvents);
+    }
+  };
+
+// Nova função para adicionar evento via clique
+  const addEventViaClick = (eventData: any) => {
+    console.log('=== ADICIONANDO VIA CLIQUE ===');
+    console.log('Dados do evento:', eventData);
+    
+    const newEventId = `event-${Date.now()}-${Math.random()}`;
+    const colors = getEventTypeColors(eventData.extendedProps?.type || '');
+    
+    // Criar evento com horário padrão (próximo slot disponível)
+    const now = new Date();
+    const startDate = new Date(2020, 0, 6, 8, 30, 0); // Segunda 8:30
+    const endDate = new Date(2020, 0, 6, 9, 30, 0); // Segunda 9:30
+    
+    const newEvent: Event = {
+      id: newEventId,
+      title: eventData.title,
+      start: startDate,
+      end: endDate,
+      room: eventData.extendedProps?.room || '',
+      professor: eventData.extendedProps?.professor || '',
+      semester: eventData.extendedProps?.semester || '',
+      class: eventData.extendedProps?.class || '',
+      type: eventData.extendedProps?.type || '',
+      backgroundColor: colors.bg,
+      borderColor: colors.border,
+    };
+
+    console.log('NOVO EVENTO CRIADO:', newEvent);
+
+    setEvents(prevEvents => {
+      const updatedEvents = [...prevEvents, newEvent];
+      notifyEventsChange(updatedEvents);
+      return updatedEvents;
+    });
+
+    // Auto selecionar para edição
+    if (onEventClick) {
+      onEventClick(newEvent);
+    }
+  };
 
   // Helper function to create event data from FullCalendar event
   const createEventDataFromFullCalendar = (fcEvent: any): Event => {
@@ -69,8 +121,8 @@ const Timetable = forwardRef<TimetableRef, TimetableProps>(({ onEventClick, onEv
     console.log('Evento movido:', info.event);
     
     // Atualizar o estado interno
-    setEvents(prevEvents => 
-      prevEvents.map(event => 
+    setEvents(prevEvents => {
+      const updatedEvents = prevEvents.map(event => 
         event.id === info.event.id 
           ? {
               ...event,
@@ -78,8 +130,10 @@ const Timetable = forwardRef<TimetableRef, TimetableProps>(({ onEventClick, onEv
               end: info.event.end
             }
           : event
-      )
-    );
+      );
+      notifyEventsChange(updatedEvents);
+      return updatedEvents;
+    });
 
     // Se este evento está selecionado, notificar mudança em tempo real
     if (selectedEventId === info.event.id && onEventChange) {
@@ -93,8 +147,8 @@ const Timetable = forwardRef<TimetableRef, TimetableProps>(({ onEventClick, onEv
     console.log('Evento redimensionado:', info.event);
     
     // Atualizar o estado interno
-    setEvents(prevEvents => 
-      prevEvents.map(event => 
+    setEvents(prevEvents => {
+      const updatedEvents = prevEvents.map(event => 
         event.id === info.event.id 
           ? {
               ...event,
@@ -102,8 +156,10 @@ const Timetable = forwardRef<TimetableRef, TimetableProps>(({ onEventClick, onEv
               end: info.event.end
             }
           : event
-      )
-    );
+      );
+      notifyEventsChange(updatedEvents);
+      return updatedEvents;
+    });
 
     // Se este evento está selecionado, notificar mudança em tempo real
     if (selectedEventId === info.event.id && onEventChange) {
@@ -146,48 +202,88 @@ const Timetable = forwardRef<TimetableRef, TimetableProps>(({ onEventClick, onEv
   };
 
   const handleEventReceive = (info: any) => {
-    console.log('Evento recebido:', info.event);
+    console.log('=== EVENTO ARRASTADO RECEBIDO ===');
     
-    // Create a complete event object with all properties
-    const newEvent: Event = {
-      id: info.event.id || `event-${Date.now()}`,
-      title: info.event.title || 'New Event',
+    // Prevent FullCalendar from auto-adding the event
+    // We'll handle it manually to avoid duplications
+    const eventData = {
+      title: info.event.title,
       start: info.event.start,
-      end: info.event.end,
-      room: info.event.extendedProps?.room,
-      professor: info.event.extendedProps?.professor,
-      semester: info.event.extendedProps?.semester,
-      class: info.event.extendedProps?.class,
-      type: info.event.extendedProps?.type,
-      backgroundColor: info.event.backgroundColor || '#3788d8',
-      borderColor: info.event.borderColor || '#3788d8',
+      end: info.event.end || new Date(info.event.start.getTime() + 60*60*1000),
+      extendedProps: info.event.extendedProps || {}
+    };
+    
+    console.log('Dados extraídos:', eventData);
+    
+    // Remove the auto-created event to prevent duplicates
+    info.event.remove();
+    
+    // Create our controlled event
+    const newEventId = `event-${Date.now()}-${Math.random()}`;
+    const colors = getEventTypeColors(eventData.extendedProps?.type || '');
+    
+    const newEvent: Event = {
+      id: newEventId,
+      title: eventData.title,
+      start: eventData.start,
+      end: eventData.end,
+      room: eventData.extendedProps?.room || '',
+      professor: eventData.extendedProps?.professor || '',
+      semester: eventData.extendedProps?.semester || '',
+      class: eventData.extendedProps?.class || '',
+      type: eventData.extendedProps?.type || '',
+      backgroundColor: colors.bg,
+      borderColor: colors.border,
     };
 
-    setEvents(prevEvents => [...prevEvents, newEvent]);
+    console.log('Adicionando evento único:', newEvent);
+
+    // Add to state (this will trigger re-render and show the event)
+    setEvents(prevEvents => {
+      const updatedEvents = [...prevEvents, newEvent];
+      notifyEventsChange(updatedEvents);
+      return updatedEvents;
+    });
+
+    // Auto-select for editing
+    if (onEventClick) {
+      // Small delay to ensure state update completed
+      setTimeout(() => {
+        onEventClick(newEvent);
+      }, 100);
+    }
   };
 
   // Function to add event from form
   const addEvent = (event: Event) => {
     console.log('Adicionando evento:', event);
-    setEvents(prevEvents => [...prevEvents, event]);
+    setEvents(prevEvents => {
+      const updatedEvents = [...prevEvents, event];
+      notifyEventsChange(updatedEvents);
+      return updatedEvents;
+    });
   };
 
   // Function to update event
   const updateEvent = (updatedEvent: Event) => {
     console.log('Atualizando evento:', updatedEvent);
-    setEvents(prevEvents => 
-      prevEvents.map(event => 
+    setEvents(prevEvents => {
+      const updatedEvents = prevEvents.map(event => 
         event.id === updatedEvent.id ? updatedEvent : event
-      )
-    );
+      );
+      notifyEventsChange(updatedEvents);
+      return updatedEvents;
+    });
   };
 
   // Function to delete event
   const deleteEvent = (eventId: string | number) => {
     console.log('Deletando evento:', eventId);
-    setEvents(prevEvents => 
-      prevEvents.filter(event => event.id !== eventId)
-    );
+    setEvents(prevEvents => {
+      const updatedEvents = prevEvents.filter(event => event.id !== eventId);
+      notifyEventsChange(updatedEvents);
+      return updatedEvents;
+    });
     
     // Se o evento deletado estava selecionado, limpar seleção
     if (selectedEventId === eventId) {
@@ -195,11 +291,17 @@ const Timetable = forwardRef<TimetableRef, TimetableProps>(({ onEventClick, onEv
     }
   };
 
+  // Function to get current events
+  const getEvents = () => {
+    return events;
+  };
+
   // Expose functions to parent component
   useImperativeHandle(ref, () => ({
     addEvent,
     updateEvent,
-    deleteEvent
+    deleteEvent,
+    getEvents
   }));
 
   return (

@@ -1,5 +1,5 @@
 // src/pages/Index.tsx
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import SidePanel from '@/components/SidePanel';
 import Timetable from '@/components/Timetable';
 import { Event } from '@/types/Event';
@@ -7,7 +7,22 @@ import Header from '@/components/Header';
 
 const Index = () => {
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
+  const [existingEvents, setExistingEvents] = useState<Event[]>([]);
   const timetableRef = useRef<any>(null);
+
+  // Atualizar a lista de eventos existentes sempre que o calendário mudar
+  useEffect(() => {
+    const updateExistingEvents = () => {
+      if (timetableRef.current && timetableRef.current.getEvents) {
+        const events = timetableRef.current.getEvents();
+        setExistingEvents(events);
+      }
+    };
+
+    // Pequeno delay para garantir que o componente está montado
+    const timer = setTimeout(updateExistingEvents, 100);
+    return () => clearTimeout(timer);
+  }, []);
 
   // Handle event click from calendar
   const handleEventClick = (event: Event) => {
@@ -38,6 +53,12 @@ const Index = () => {
     if (timetableRef.current && timetableRef.current.updateEvent) {
       timetableRef.current.updateEvent(updatedEvent);
     }
+    
+    // Atualizar lista de eventos existentes
+    setExistingEvents(prev => 
+      prev.map(event => event.id === updatedEvent.id ? updatedEvent : event)
+    );
+    
     // Clear selection after update
     setSelectedEvent(null);
   };
@@ -50,6 +71,9 @@ const Index = () => {
     if (timetableRef.current && timetableRef.current.addEvent) {
       timetableRef.current.addEvent(newEvent);
     }
+    
+    // Atualizar lista de eventos existentes
+    setExistingEvents(prev => [...prev, newEvent]);
   };
 
   // Handle event delete from form
@@ -60,6 +84,10 @@ const Index = () => {
     if (timetableRef.current && timetableRef.current.deleteEvent) {
       timetableRef.current.deleteEvent(eventId);
     }
+    
+    // Atualizar lista de eventos existentes
+    setExistingEvents(prev => prev.filter(event => event.id !== eventId));
+    
     // Clear selection after delete
     setSelectedEvent(null);
   };
@@ -77,6 +105,7 @@ const Index = () => {
           <div className="lg:col-span-1 h-full overflow-auto">
             <SidePanel 
               selectedEvent={selectedEvent}
+              existingEvents={existingEvents}
               onEventUpdate={handleEventUpdate}
               onEventAdd={handleEventAdd}
               onEventDelete={handleEventDelete}

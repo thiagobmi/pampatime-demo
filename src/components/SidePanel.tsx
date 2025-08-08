@@ -6,6 +6,7 @@ import { Event } from '@/types/Event';
 
 interface SidePanelProps {
   selectedEvent?: Event | null;
+  existingEvents?: Event[]; // Nova prop para passar eventos existentes
   onEventUpdate?: (event: Event) => void;
   onEventAdd?: (event: Event) => void;
   onEventDelete?: (eventId: string | number) => void;
@@ -15,6 +16,7 @@ interface SidePanelProps {
 
 const SidePanel: React.FC<SidePanelProps> = ({
   selectedEvent,
+  existingEvents = [], // Default para array vazio
   onEventUpdate,
   onEventAdd,
   onEventDelete,
@@ -34,7 +36,7 @@ const SidePanel: React.FC<SidePanelProps> = ({
         />
       </div>
       <div className="flex-1 min-h-0 overflow-hidden">
-        <ClassesPanel />
+        <ClassesPanel existingEvents={existingEvents} />
       </div>
     </div>
   );

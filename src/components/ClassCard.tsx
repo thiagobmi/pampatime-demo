@@ -26,25 +26,30 @@ const ClassCard: React.FC<ClassCardProps> = ({
   // Generate colors dynamically based on type
   const colors = getEventTypeColors(type);
   
-  // Create event data for FullCalendar dragging
+  // Create event data for FullCalendar dragging with ALL properties
   const eventData = {
     title: title,
     backgroundColor: colors.bg,
     borderColor: colors.border,
     textColor: colors.text,
+    // Use extendedProps to store ALL custom properties
     extendedProps: {
-      room: room,
-      professor: professor,
-      type: type,
+      room: room || event?.room,
+      professor: professor || event?.professor,
+      type: type || event?.type,
+      semester: event?.semester,
+      class: event?.class,
+      // Include any other properties from the original event
       ...event?.extendedProps
     }
   };
   
   useEffect(() => {
     if (cardRef.current) {
+      // Store complete event data including all properties
       cardRef.current.setAttribute('data-event', JSON.stringify(eventData));
     }
-  }, [title, room, professor, type, roomInfo, colors]);
+  }, [title, room, professor, type, roomInfo, colors, event]);
   
   // Card styles with dynamic colors
   const cardStyle = {
@@ -64,8 +69,26 @@ const ClassCard: React.FC<ClassCardProps> = ({
       draggable="true"
     >
       <div className="font-medium">{title}</div>
-      {room && <div className="text-xs opacity-75">Sala: {room}</div>}
-      {professor && <div className="text-xs opacity-75">Professor: {professor}</div>}
+      {(room || event?.room) && (
+        <div className="text-xs opacity-75">
+          Sala: {room || event?.room}
+        </div>
+      )}
+      {(professor || event?.professor) && (
+        <div className="text-xs opacity-75">
+          Professor: {professor || event?.professor}
+        </div>
+      )}
+      {event?.semester && (
+        <div className="text-xs opacity-75">
+          Semestre: {event.semester}
+        </div>
+      )}
+      {event?.class && (
+        <div className="text-xs opacity-75">
+          Turma: {event.class}
+        </div>
+      )}
       {roomInfo && <div className="text-xs mt-1 opacity-60">{roomInfo}</div>}
     </div>
   );
