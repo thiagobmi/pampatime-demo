@@ -1,9 +1,9 @@
-import React, { forwardRef, useImperativeHandle, useRef } from 'react';
-import { ChevronLeft, ChevronRight, Search } from 'lucide-react';
+import React, { forwardRef, useImperativeHandle, useRef, useState, useMemo } from 'react';
+import { ChevronLeft, ChevronRight, Search, X } from 'lucide-react';
 import { Button } from "@/components/ui/button";
-import { useState } from 'react';
 import { EventCalendar } from './EventCalendar';
 import { getEventTypeColors } from '@/types/Event';
+import { getAcademicData } from '@/utils/academicDataUtils';
 
 interface Event {
   id?: string | number;
@@ -22,69 +22,129 @@ interface Event {
 interface TimetableProps {
   onEventClick?: (event: Event) => void;
   onEventChange?: (event: Event) => void;
-  onEventsChange?: (events: Event[]) => void; // Nova prop para notificar mudanças na lista de eventos
+  onEventsChange?: (events: Event[]) => void;
 }
 
 interface TimetableRef {
   addEvent: (event: Event) => void;
   updateEvent: (event: Event) => void;
   deleteEvent: (eventId: string | number) => void;
-  getEvents: () => Event[]; // Nova função para obter eventos
+  getEvents: () => Event[];
 }
 
+type FilterType = 'professor' | 'semestre' | 'sala';
+
 const Timetable = forwardRef<TimetableRef, TimetableProps>(({ onEventClick, onEventChange, onEventsChange }, ref) => {
-  // Events state
   const [events, setEvents] = useState<Event[]>([]);
   const [selectedEventId, setSelectedEventId] = useState<string | number | null>(null);
-  const processedEventsRef = useRef(new Set<string>()); // Track processed events
+  const [searchTerm, setSearchTerm] = useState('');
   
-  console.log('Eventos:', events);
+  // Estados dos filtros
+  const [activeFilterType, setActiveFilterType] = useState<FilterType>('professor');
+  const [selectedValues, setSelectedValues] = useState<Record<FilterType, string>>({
+    professor: '',
+    semestre: '',
+    sala: ''
+  });
+  const [showSearchModal, setShowSearchModal] = useState(false);
+  const [searchModalTerm, setSearchModalTerm] = useState('');
+
+  // Dados acadêmicos do JSON
+  const academicData = getAcademicData();
+
+  // Opções para cada tipo de filtro baseadas no JSON
+  const filterOptions = useMemo(() => {
+    return {
+      professor: academicData.professores.map(prof => prof.nome).sort(),
+      semestre: academicData.semestres.map(sem => sem.codigo).sort(),
+      sala: academicData.salas.map(sala => sala.codigo).sort()
+    };
+  }, [academicData]);
+
+  // Valor atualmente selecionado para o filtro ativo
+  const currentValue = selectedValues[activeFilterType];
+  const currentOptions = filterOptions[activeFilterType];
+  const currentIndex = currentOptions.indexOf(currentValue);
+
+  // Opções filtradas para o modal de pesquisa
+  const filteredModalOptions = useMemo(() => {
+    if (!searchModalTerm) return currentOptions;
+    return currentOptions.filter(option =>
+      option.toLowerCase().includes(searchModalTerm.toLowerCase())
+    );
+  }, [currentOptions, searchModalTerm]);
+
+  // Navegação pelos valores
+  const navigatePrevious = () => {
+    if (currentOptions.length === 0) return;
+    
+    if (currentValue === '') {
+      // Se nenhum valor selecionado, vai para o último
+      setSelectedValues(prev => ({
+        ...prev,
+        [activeFilterType]: currentOptions[currentOptions.length - 1]
+      }));
+    } else if (currentIndex > 0) {
+      // Vai para o anterior
+      setSelectedValues(prev => ({
+        ...prev,
+        [activeFilterType]: currentOptions[currentIndex - 1]
+      }));
+    } else {
+      // Se já está no primeiro, remove a seleção
+      setSelectedValues(prev => ({
+        ...prev,
+        [activeFilterType]: ''
+      }));
+    }
+  };
+
+  const navigateNext = () => {
+    if (currentOptions.length === 0) return;
+    
+    if (currentValue === '') {
+      // Se nenhum valor selecionado, vai para o primeiro
+      setSelectedValues(prev => ({
+        ...prev,
+        [activeFilterType]: currentOptions[0]
+      }));
+    } else if (currentIndex < currentOptions.length - 1) {
+      // Vai para o próximo
+      setSelectedValues(prev => ({
+        ...prev,
+        [activeFilterType]: currentOptions[currentIndex + 1]
+      }));
+    } else {
+      // Se já está no último, remove a seleção
+      setSelectedValues(prev => ({
+        ...prev,
+        [activeFilterType]: ''
+      }));
+    }
+  };
+
+  // Eventos filtrados
+  const filteredEvents = useMemo(() => {
+    return events.filter(event => {
+      // Filtro por termo de pesquisa
+      const matchesSearch = !searchTerm || 
+        event.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        event.professor?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        event.room?.toLowerCase().includes(searchTerm.toLowerCase());
+
+      // Filtros por valores selecionados
+      const matchesProfessor = !selectedValues.professor || event.professor === selectedValues.professor;
+      const matchesSala = !selectedValues.sala || event.room === selectedValues.sala;
+      const matchesSemestre = !selectedValues.semestre || event.semester === selectedValues.semestre;
+
+      return matchesSearch && matchesProfessor && matchesSala && matchesSemestre;
+    });
+  }, [events, searchTerm, selectedValues]);
 
   // Notify parent when events change
   const notifyEventsChange = (newEvents: Event[]) => {
     if (onEventsChange) {
       onEventsChange(newEvents);
-    }
-  };
-
-// Nova função para adicionar evento via clique
-  const addEventViaClick = (eventData: any) => {
-    console.log('=== ADICIONANDO VIA CLIQUE ===');
-    console.log('Dados do evento:', eventData);
-    
-    const newEventId = `event-${Date.now()}-${Math.random()}`;
-    const colors = getEventTypeColors(eventData.extendedProps?.type || '');
-    
-    // Criar evento com horário padrão (próximo slot disponível)
-    const now = new Date();
-    const startDate = new Date(2020, 0, 6, 8, 30, 0); // Segunda 8:30
-    const endDate = new Date(2020, 0, 6, 9, 30, 0); // Segunda 9:30
-    
-    const newEvent: Event = {
-      id: newEventId,
-      title: eventData.title,
-      start: startDate,
-      end: endDate,
-      room: eventData.extendedProps?.room || '',
-      professor: eventData.extendedProps?.professor || '',
-      semester: eventData.extendedProps?.semester || '',
-      class: eventData.extendedProps?.class || '',
-      type: eventData.extendedProps?.type || '',
-      backgroundColor: colors.bg,
-      borderColor: colors.border,
-    };
-
-    console.log('NOVO EVENTO CRIADO:', newEvent);
-
-    setEvents(prevEvents => {
-      const updatedEvents = [...prevEvents, newEvent];
-      notifyEventsChange(updatedEvents);
-      return updatedEvents;
-    });
-
-    // Auto selecionar para edição
-    if (onEventClick) {
-      onEventClick(newEvent);
     }
   };
 
@@ -105,10 +165,8 @@ const Timetable = forwardRef<TimetableRef, TimetableProps>(({ onEventClick, onEv
     };
   };
 
-  // Handle event click - pass the event data to parent
+  // Handle event click
   const handleEventClick = (info: any) => {
-    console.log('Evento clicado:', info.event);
-    
     const eventData = createEventDataFromFullCalendar(info.event);
     setSelectedEventId(eventData.id);
     
@@ -118,9 +176,6 @@ const Timetable = forwardRef<TimetableRef, TimetableProps>(({ onEventClick, onEv
   };
 
   const handleEventDrop = (info: any) => {
-    console.log('Evento movido:', info.event);
-    
-    // Atualizar o estado interno
     setEvents(prevEvents => {
       const updatedEvents = prevEvents.map(event => 
         event.id === info.event.id 
@@ -135,18 +190,13 @@ const Timetable = forwardRef<TimetableRef, TimetableProps>(({ onEventClick, onEv
       return updatedEvents;
     });
 
-    // Se este evento está selecionado, notificar mudança em tempo real
     if (selectedEventId === info.event.id && onEventChange) {
       const updatedEventData = createEventDataFromFullCalendar(info.event);
-      console.log('Notificando mudança em tempo real:', updatedEventData);
       onEventChange(updatedEventData);
     }
   };
 
   const handleEventResize = (info: any) => {
-    console.log('Evento redimensionado:', info.event);
-    
-    // Atualizar o estado interno
     setEvents(prevEvents => {
       const updatedEvents = prevEvents.map(event => 
         event.id === info.event.id 
@@ -161,51 +211,13 @@ const Timetable = forwardRef<TimetableRef, TimetableProps>(({ onEventClick, onEv
       return updatedEvents;
     });
 
-    // Se este evento está selecionado, notificar mudança em tempo real
     if (selectedEventId === info.event.id && onEventChange) {
-      const updatedEventData = createEventDataFromFullCalendar(info.event);
-      console.log('Notificando redimensionamento em tempo real:', updatedEventData);
-      onEventChange(updatedEventData);
-    }
-  };
-
-  // Novo handler para capturar durante o drag (em tempo real)
-  const handleEventDragStart = (info: any) => {
-    console.log('Iniciou drag do evento:', info.event);
-    setSelectedEventId(info.event.id);
-  };
-
-  const handleEventDragStop = (info: any) => {
-    console.log('Finalizou drag do evento:', info.event);
-    
-    // Notificar mudança final
-    if (onEventChange) {
-      const updatedEventData = createEventDataFromFullCalendar(info.event);
-      onEventChange(updatedEventData);
-    }
-  };
-
-  // Novo handler para capturar durante resize
-  const handleEventResizeStart = (info: any) => {
-    console.log('Iniciou resize do evento:', info.event);
-    setSelectedEventId(info.event.id);
-  };
-
-  const handleEventResizeStop = (info: any) => {
-    console.log('Finalizou resize do evento:', info.event);
-    
-    // Notificar mudança final
-    if (onEventChange) {
       const updatedEventData = createEventDataFromFullCalendar(info.event);
       onEventChange(updatedEventData);
     }
   };
 
   const handleEventReceive = (info: any) => {
-    console.log('=== EVENTO ARRASTADO RECEBIDO ===');
-    
-    // Prevent FullCalendar from auto-adding the event
-    // We'll handle it manually to avoid duplications
     const eventData = {
       title: info.event.title,
       start: info.event.start,
@@ -213,12 +225,8 @@ const Timetable = forwardRef<TimetableRef, TimetableProps>(({ onEventClick, onEv
       extendedProps: info.event.extendedProps || {}
     };
     
-    console.log('Dados extraídos:', eventData);
-    
-    // Remove the auto-created event to prevent duplicates
     info.event.remove();
     
-    // Create our controlled event
     const newEventId = `event-${Date.now()}-${Math.random()}`;
     const colors = getEventTypeColors(eventData.extendedProps?.type || '');
     
@@ -236,18 +244,13 @@ const Timetable = forwardRef<TimetableRef, TimetableProps>(({ onEventClick, onEv
       borderColor: colors.border,
     };
 
-    console.log('Adicionando evento único:', newEvent);
-
-    // Add to state (this will trigger re-render and show the event)
     setEvents(prevEvents => {
       const updatedEvents = [...prevEvents, newEvent];
       notifyEventsChange(updatedEvents);
       return updatedEvents;
     });
 
-    // Auto-select for editing
     if (onEventClick) {
-      // Small delay to ensure state update completed
       setTimeout(() => {
         onEventClick(newEvent);
       }, 100);
@@ -256,7 +259,6 @@ const Timetable = forwardRef<TimetableRef, TimetableProps>(({ onEventClick, onEv
 
   // Function to add event from form
   const addEvent = (event: Event) => {
-    console.log('Adicionando evento:', event);
     setEvents(prevEvents => {
       const updatedEvents = [...prevEvents, event];
       notifyEventsChange(updatedEvents);
@@ -266,7 +268,6 @@ const Timetable = forwardRef<TimetableRef, TimetableProps>(({ onEventClick, onEv
 
   // Function to update event
   const updateEvent = (updatedEvent: Event) => {
-    console.log('Atualizando evento:', updatedEvent);
     setEvents(prevEvents => {
       const updatedEvents = prevEvents.map(event => 
         event.id === updatedEvent.id ? updatedEvent : event
@@ -278,14 +279,12 @@ const Timetable = forwardRef<TimetableRef, TimetableProps>(({ onEventClick, onEv
 
   // Function to delete event
   const deleteEvent = (eventId: string | number) => {
-    console.log('Deletando evento:', eventId);
     setEvents(prevEvents => {
       const updatedEvents = prevEvents.filter(event => event.id !== eventId);
       notifyEventsChange(updatedEvents);
       return updatedEvents;
     });
     
-    // Se o evento deletado estava selecionado, limpar seleção
     if (selectedEventId === eventId) {
       setSelectedEventId(null);
     }
@@ -296,6 +295,19 @@ const Timetable = forwardRef<TimetableRef, TimetableProps>(({ onEventClick, onEv
     return events;
   };
 
+  // Clear all filters
+  const clearAllFilters = () => {
+    setSelectedValues({
+      professor: '',
+      semestre: '',
+      sala: ''
+    });
+    setSearchTerm('');
+  };
+
+  // Check if any filter is active
+  const hasActiveFilters = Object.values(selectedValues).some(value => value !== '') || searchTerm;
+
   // Expose functions to parent component
   useImperativeHandle(ref, () => ({
     addEvent,
@@ -304,54 +316,318 @@ const Timetable = forwardRef<TimetableRef, TimetableProps>(({ onEventClick, onEv
     getEvents
   }));
 
+  // Helper function to get display text for filter navigation
+  const getNavigationDisplayText = () => {
+    if (currentValue === '') {
+      return `Selecione ${activeFilterType}`;
+    }
+    
+    const position = currentIndex + 1;
+    const total = currentOptions.length;
+    return `${currentValue} (${position}/${total})`;
+  };
+
+  // Handle search modal
+  const openSearchModal = () => {
+    setSearchModalTerm('');
+    setShowSearchModal(true);
+  };
+
+  const closeSearchModal = () => {
+    setShowSearchModal(false);
+    setSearchModalTerm('');
+  };
+
+  const selectFromModal = (value: string) => {
+    setSelectedValues(prev => ({
+      ...prev,
+      [activeFilterType]: value
+    }));
+    closeSearchModal();
+  };
+
+  // Close modal when clicking outside
+  React.useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const modal = document.getElementById('search-modal');
+      if (modal && !modal.contains(event.target as Node)) {
+        closeSearchModal();
+      }
+    };
+
+    if (showSearchModal) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [showSearchModal]);
+
   return (
     <div className="w-full h-full flex flex-col border border-gray-200 rounded-lg shadow-sm bg-white">
       <div className="flex items-center justify-between p-2 border-b">
+        {/* Navegação com setas */}
         <div className="flex items-center space-x-2">
-          <Button variant="ghost" size="icon" className="h-8 w-8">
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="h-8 w-8"
+            onClick={navigatePrevious}
+            disabled={currentOptions.length === 0}
+          >
             <ChevronLeft className="h-4 w-4" />
           </Button>
-          <span className="font-medium text-sm">A1-202</span>
-          <Button variant="ghost" size="icon" className="h-8 w-8">
+          
+          <div className="min-w-[180px] text-center relative">
+            <div className="text-xs text-gray-500 uppercase tracking-wider">
+              {activeFilterType.charAt(0).toUpperCase() + activeFilterType.slice(1)}
+            </div>
+            <div 
+              className="font-medium text-sm cursor-pointer hover:bg-gray-100 px-2 py-1 rounded transition-colors"
+              onClick={openSearchModal}
+              title="Clique para pesquisar"
+            >
+              {getNavigationDisplayText()}
+            </div>
+            
+            {/* Modal de pesquisa */}
+            {showSearchModal && (
+              <div 
+                id="search-modal"
+                className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 w-80 bg-white border border-gray-300 rounded-lg shadow-lg z-50"
+              >
+                <div className="p-3 border-b border-gray-200">
+                  <div className="text-sm font-medium text-gray-700 mb-2">
+                    Pesquisar {activeFilterType}
+                  </div>
+                  <div className="relative">
+                    <Search size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                    <input
+                      type="text"
+                      placeholder={`Digite para buscar ${activeFilterType}...`}
+                      value={searchModalTerm}
+                      onChange={(e) => setSearchModalTerm(e.target.value)}
+                      className="w-full pl-9 pr-3 py-2 text-sm border border-gray-200 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      autoFocus
+                    />
+                  </div>
+                </div>
+
+                <div className="max-h-48 overflow-y-auto">
+                  {currentValue && (
+                    <div
+                      className="px-3 py-2 text-sm cursor-pointer hover:bg-red-50 border-b border-gray-100 text-red-600"
+                      onClick={() => selectFromModal('')}
+                    >
+                      <div className="font-medium flex items-center">
+                        <X size={14} className="mr-2" />
+                        Limpar seleção
+                      </div>
+                    </div>
+                  )}
+                  
+                  {filteredModalOptions.length > 0 ? (
+                    filteredModalOptions.map((option, index) => (
+                      <div
+                        key={index}
+                        className={`px-3 py-2 text-sm cursor-pointer hover:bg-blue-50 ${
+                          currentValue === option ? 'bg-blue-100 text-blue-800' : ''
+                        }`}
+                        onClick={() => selectFromModal(option)}
+                      >
+                        <div className="font-medium">{option}</div>
+                        {activeFilterType === 'professor' && (
+                          (() => {
+                            const prof = academicData.professores.find(p => p.nome === option);
+                            return prof ? (
+                              <div className="text-xs text-gray-500">
+                                {prof.departamento} - {prof.especialidade}
+                              </div>
+                            ) : null;
+                          })()
+                        )}
+                        {activeFilterType === 'sala' && (
+                          (() => {
+                            const sala = academicData.salas.find(s => s.codigo === option);
+                            return sala ? (
+                              <div className="text-xs text-gray-500">
+                                {sala.tipo} - Bloco {sala.bloco}, {sala.andar}º andar
+                              </div>
+                            ) : null;
+                          })()
+                        )}
+                        {activeFilterType === 'semestre' && (
+                          (() => {
+                            const semestre = academicData.semestres.find(s => s.codigo === option);
+                            return semestre ? (
+                              <div className="text-xs text-gray-500">
+                                {semestre.nome}
+                              </div>
+                            ) : null;
+                          })()
+                        )}
+                      </div>
+                    ))
+                  ) : (
+                    <div className="px-3 py-4 text-sm text-gray-500 text-center">
+                      <Search size={16} className="mx-auto mb-2" />
+                      Nenhum resultado encontrado para "{searchModalTerm}"
+                    </div>
+                  )}
+                </div>
+                
+                {filteredModalOptions.length > 0 && (
+                  <div className="px-3 py-2 border-t border-gray-200 text-xs text-gray-500 text-center">
+                    {filteredModalOptions.length} de {currentOptions.length} opções
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+          
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="h-8 w-8"
+            onClick={navigateNext}
+            disabled={currentOptions.length === 0}
+          >
             <ChevronRight className="h-4 w-4" />
           </Button>
         </div>
         
+        {/* Botões de seleção de tipo de filtro */}
         <div className="flex items-center divide-x divide-gray-200 rounded-md overflow-hidden border border-gray-300">
-          <Button variant="outline" className="bg-white text-sm h-8 rounded-none rounded-l-md border-none">Professor</Button>
-          <Button variant="outline" className="bg-white text-sm h-8 rounded-none border-none">Semestre</Button>
-          <Button variant="outline" className="bg-pampa-green text-white hover:bg-pampa-green/90 text-sm h-8 rounded-none border-none">Sala</Button>
-          <Button variant="outline" className="bg-white text-sm h-8 rounded-none rounded-r-md border-none">Curso</Button>
-        </div>
-        
-        <div className="relative">
-          <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-3 w-3 text-gray-500" />
-          <input
-            type="text"
-            placeholder="Pesquisar"
-            className="pl-7 pr-8 py-1 w-full border rounded-md text-xs"
-          />
-          <Button variant="ghost" size="icon" className="absolute right-1 top-1/2 transform -translate-y-1/2 h-6 w-6 p-1">
-            <svg width="12" height="12" viewBox="0 0 15 15" fill="none">
-              <path d="M2 4.5C2 4.22386 2.22386 4 2.5 4H12.5C12.7761 4 13 4.22386 13 4.5C13 4.77614 12.7761 5 12.5 5H2.5C2.22386 5 2 4.77614 2 4.5ZM4 7.5C4 7.22386 4.22386 7 4.5 7H10.5C10.7761 7 11 7.22386 11 7.5C11 7.77614 10.7761 8 10.5 8H4.5C4.22386 8 4 7.77614 4 7.5ZM5 10.5C5 10.2239 5.22386 10 5.5 10H9.5C9.77614 10 10 10.2239 10 10.5C10 10.7761 9.77614 11 9.5 11H5.5C5.22386 11 5 10.7761 5 10.5Z" fill="currentColor" />
-            </svg>
+          <Button
+            variant="outline"
+            className={`text-sm h-8 rounded-none border-none px-4 ${
+              activeFilterType === 'professor' 
+                ? 'bg-pampa-green text-white' 
+                : 'bg-white hover:bg-gray-50'
+            }`}
+            onClick={() => setActiveFilterType('professor')}
+          >
+            Professor
+          </Button>
+          <Button
+            variant="outline"
+            className={`text-sm h-8 rounded-none border-none px-4 ${
+              activeFilterType === 'semestre' 
+                ? 'bg-pampa-green text-white' 
+                : 'bg-white hover:bg-gray-50'
+            }`}
+            onClick={() => setActiveFilterType('semestre')}
+          >
+            Semestre
+          </Button>
+          <Button
+            variant="outline"
+            className={`text-sm h-8 rounded-none border-none px-4 ${
+              activeFilterType === 'sala' 
+                ? 'bg-pampa-green text-white' 
+                : 'bg-white hover:bg-gray-50'
+            }`}
+            onClick={() => setActiveFilterType('sala')}
+          >
+            Sala
           </Button>
         </div>
+        
+        {/* Campo de pesquisa e botão limpar */}
+        <div className="flex items-center space-x-2">
+          <div className="relative">
+            <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-3 w-3 text-gray-500" />
+            <input
+              type="text"
+              placeholder="Pesquisar..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-7 pr-8 py-1 w-full border rounded-md text-xs min-w-[140px]"
+            />
+            {searchTerm && (
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="absolute right-1 top-1/2 transform -translate-y-1/2 h-6 w-6 p-1"
+                onClick={() => setSearchTerm('')}
+              >
+                <X className="h-3 w-3" />
+              </Button>
+            )}
+          </div>
+          
+          {hasActiveFilters && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={clearAllFilters}
+              className="text-xs h-8 px-2"
+            >
+              Limpar Filtros
+            </Button>
+          )}
+        </div>
       </div>
+
+      {/* Indicador de filtros ativos */}
+      {hasActiveFilters && (
+        <div className="px-2 py-1 bg-blue-50 border-b border-blue-200 text-xs">
+          <div className="flex items-center justify-between">
+            <span className="text-blue-700">
+              Exibindo {filteredEvents.length} de {events.length} eventos
+            </span>
+            <div className="flex items-center space-x-2">
+              {selectedValues.professor && (
+                <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs flex items-center">
+                  Prof: {selectedValues.professor}
+                  <X 
+                    size={12} 
+                    className="ml-1 cursor-pointer hover:bg-blue-200 rounded" 
+                    onClick={() => setSelectedValues(prev => ({ ...prev, professor: '' }))}
+                  />
+                </span>
+              )}
+              {selectedValues.sala && (
+                <span className="bg-green-100 text-green-800 px-2 py-1 rounded text-xs flex items-center">
+                  Sala: {selectedValues.sala}
+                  <X 
+                    size={12} 
+                    className="ml-1 cursor-pointer hover:bg-green-200 rounded" 
+                    onClick={() => setSelectedValues(prev => ({ ...prev, sala: '' }))}
+                  />
+                </span>
+              )}
+              {selectedValues.semestre && (
+                <span className="bg-purple-100 text-purple-800 px-2 py-1 rounded text-xs flex items-center">
+                  Sem: {selectedValues.semestre}
+                  <X 
+                    size={12} 
+                    className="ml-1 cursor-pointer hover:bg-purple-200 rounded" 
+                    onClick={() => setSelectedValues(prev => ({ ...prev, semestre: '' }))}
+                  />
+                </span>
+              )}
+              {searchTerm && (
+                <span className="bg-gray-100 text-gray-800 px-2 py-1 rounded text-xs flex items-center">
+                  "{searchTerm}"
+                  <X 
+                    size={12} 
+                    className="ml-1 cursor-pointer hover:bg-gray-200 rounded" 
+                    onClick={() => setSearchTerm('')}
+                  />
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="flex-1 min-h-0 overflow-hidden">
         <div className="h-full">
           <EventCalendar 
-            events={events}
+            events={filteredEvents}
             onEventClick={handleEventClick}
             onEventDrop={handleEventDrop}
             onEventResize={handleEventResize}
             onEventReceive={handleEventReceive}
-            // Novos handlers para capturar mudanças em tempo real
-            onEventDragStart={handleEventDragStart}
-            onEventDragStop={handleEventDragStop}
-            onEventResizeStart={handleEventResizeStart}
-            onEventResizeStop={handleEventResizeStop}
           />
         </div>
       </div>
