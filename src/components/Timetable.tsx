@@ -5,6 +5,13 @@ import { EventCalendar } from './EventCalendar';
 import { getEventTypeColors } from '@/types/Event';
 import { getAcademicData } from '@/utils/academicDataUtils';
 
+interface ConflictInfo {
+  eventId: string | number;
+  conflictType: 'sala' | 'professor' | 'semestre';
+  conflictValue: string;
+  conflictWith: string | number;
+}
+
 interface Event {
   id?: string | number;
   title: string;
@@ -17,6 +24,9 @@ interface Event {
   type?: string;
   backgroundColor?: string;
   borderColor?: string;
+  textColor?: string;
+  className?: string;
+  conflictInfo?: ConflictInfo[];
 }
 
 interface TimetableProps {
@@ -52,6 +62,108 @@ const Timetable = forwardRef<TimetableRef, TimetableProps>(({ onEventClick, onEv
   // Dados acadêmicos do JSON
   const academicData = getAcademicData();
 
+  // Função para detectar conflitos de horários com informações detalhadas
+  const detectConflicts = React.useCallback((events: Event[]) => {
+    const conflictIds = new Set<string | number>();
+    const conflictDetails = new Map<string | number, ConflictInfo[]>();
+    
+    for (let i = 0; i < events.length; i++) {
+      for (let j = i + 1; j < events.length; j++) {
+        const event1 = events[i];
+        const event2 = events[j];
+        
+        if (!event1.start || !event2.start || !event1.end || !event2.end || !event1.id || !event2.id) continue;
+        
+        const start1 = new Date(event1.start);
+        const end1 = new Date(event1.end);
+        const start2 = new Date(event2.start);
+        const end2 = new Date(event2.end);
+        
+        // Verificar se são no mesmo dia e há sobreposição
+        const sameDay = start1.toDateString() === start2.toDateString();
+        const hasTimeOverlap = sameDay && (start1 < end2) && (start2 < end1);
+        
+        if (hasTimeOverlap) {
+          const conflicts: ConflictInfo[] = [];
+          
+          // Conflito de sala
+          if (event1.room && event2.room && event1.room === event2.room) {
+            conflicts.push(
+              {
+                eventId: event1.id,
+                conflictType: 'sala',
+                conflictValue: event1.room,
+                conflictWith: event2.id
+              },
+              {
+                eventId: event2.id,
+                conflictType: 'sala',
+                conflictValue: event2.room,
+                conflictWith: event1.id
+              }
+            );
+          }
+          
+          // Conflito de professor
+          if (event1.professor && event2.professor && event1.professor === event2.professor) {
+            conflicts.push(
+              {
+                eventId: event1.id,
+                conflictType: 'professor',
+                conflictValue: event1.professor,
+                conflictWith: event2.id
+              },
+              {
+                eventId: event2.id,
+                conflictType: 'professor',
+                conflictValue: event2.professor,
+                conflictWith: event1.id
+              }
+            );
+          }
+          
+          // Conflito de semestre - disciplinas diferentes do mesmo semestre com sobreposição
+          if (event1.semester && event2.semester && 
+              event1.semester.trim() === event2.semester.trim() && 
+              event1.title !== event2.title) {
+            conflicts.push(
+              {
+                eventId: event1.id,
+                conflictType: 'semestre',
+                conflictValue: event1.semester,
+                conflictWith: event2.id
+              },
+              {
+                eventId: event2.id,
+                conflictType: 'semestre',
+                conflictValue: event2.semester,
+                conflictWith: event1.id
+              }
+            );
+          }
+          
+          if (conflicts.length > 0) {
+            conflictIds.add(event1.id);
+            conflictIds.add(event2.id);
+            
+            conflicts.forEach(conflict => {
+              const existing = conflictDetails.get(conflict.eventId) || [];
+              existing.push(conflict);
+              conflictDetails.set(conflict.eventId, existing);
+            });
+          }
+        }
+      }
+    }
+    
+    return { conflictIds, conflictDetails };
+  }, []);
+
+  // Detectar conflitos nos eventos atuais
+  const conflictData = useMemo(() => {
+    return detectConflicts(events);
+  }, [events, detectConflicts]);
+
   // Opções para cada tipo de filtro baseadas no JSON
   const filterOptions = useMemo(() => {
     return {
@@ -74,24 +186,53 @@ const Timetable = forwardRef<TimetableRef, TimetableProps>(({ onEventClick, onEv
     );
   }, [currentOptions, searchModalTerm]);
 
+  // Função para gerar texto descritivo dos conflitos
+  const getConflictDescription = (conflictInfo: ConflictInfo[]): string => {
+    if (!conflictInfo || conflictInfo.length === 0) return '';
+    
+    const conflictsByType = conflictInfo.reduce((acc, conflict) => {
+      if (!acc[conflict.conflictType]) {
+        acc[conflict.conflictType] = new Set();
+      }
+      acc[conflict.conflictType].add(conflict.conflictValue);
+      return acc;
+    }, {} as Record<string, Set<string>>);
+    
+    const descriptions = [];
+    
+    if (conflictsByType.sala) {
+      const salas = Array.from(conflictsByType.sala);
+      descriptions.push(`Sala ${salas.join(', ')} ocupada`);
+    }
+    
+    if (conflictsByType.professor) {
+      const professores = Array.from(conflictsByType.professor);
+      descriptions.push(`Prof. ${professores.join(', ')} em conflito`);
+    }
+    
+    if (conflictsByType.semestre) {
+      const semestres = Array.from(conflictsByType.semestre);
+      descriptions.push(`Semestre ${semestres.join(', ')} sobreposto`);
+    }
+    
+    return descriptions.join(' • ');
+  };
+
   // Navegação pelos valores
   const navigatePrevious = () => {
     if (currentOptions.length === 0) return;
     
     if (currentValue === '') {
-      // Se nenhum valor selecionado, vai para o último
       setSelectedValues(prev => ({
         ...prev,
         [activeFilterType]: currentOptions[currentOptions.length - 1]
       }));
     } else if (currentIndex > 0) {
-      // Vai para o anterior
       setSelectedValues(prev => ({
         ...prev,
         [activeFilterType]: currentOptions[currentIndex - 1]
       }));
     } else {
-      // Se já está no primeiro, remove a seleção
       setSelectedValues(prev => ({
         ...prev,
         [activeFilterType]: ''
@@ -103,19 +244,16 @@ const Timetable = forwardRef<TimetableRef, TimetableProps>(({ onEventClick, onEv
     if (currentOptions.length === 0) return;
     
     if (currentValue === '') {
-      // Se nenhum valor selecionado, vai para o primeiro
       setSelectedValues(prev => ({
         ...prev,
         [activeFilterType]: currentOptions[0]
       }));
     } else if (currentIndex < currentOptions.length - 1) {
-      // Vai para o próximo
       setSelectedValues(prev => ({
         ...prev,
         [activeFilterType]: currentOptions[currentIndex + 1]
       }));
     } else {
-      // Se já está no último, remove a seleção
       setSelectedValues(prev => ({
         ...prev,
         [activeFilterType]: ''
@@ -126,13 +264,11 @@ const Timetable = forwardRef<TimetableRef, TimetableProps>(({ onEventClick, onEv
   // Eventos filtrados
   const filteredEvents = useMemo(() => {
     return events.filter(event => {
-      // Filtro por termo de pesquisa
       const matchesSearch = !searchTerm || 
         event.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
         event.professor?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         event.room?.toLowerCase().includes(searchTerm.toLowerCase());
 
-      // Filtros por valores selecionados
       const matchesProfessor = !selectedValues.professor || event.professor === selectedValues.professor;
       const matchesSala = !selectedValues.sala || event.room === selectedValues.sala;
       const matchesSemestre = !selectedValues.semestre || event.semester === selectedValues.semestre;
@@ -140,6 +276,42 @@ const Timetable = forwardRef<TimetableRef, TimetableProps>(({ onEventClick, onEv
       return matchesSearch && matchesProfessor && matchesSala && matchesSemestre;
     });
   }, [events, searchTerm, selectedValues]);
+
+  // Aplicar estilos de conflito aos eventos
+  const styledFilteredEvents = useMemo(() => {
+    return filteredEvents.map(event => {
+      if (event.id && conflictData.conflictIds.has(event.id)) {
+        const eventConflicts = conflictData.conflictDetails.get(event.id) || [];
+        return {
+          ...event,
+          backgroundColor: '#fee2e2',
+          borderColor: '#dc2626',
+          textColor: '#7f1d1d',
+          className: 'conflict-event',
+          conflictInfo: eventConflicts
+        };
+      }
+      return event;
+    });
+  }, [filteredEvents, conflictData]);
+
+  // Agrupar conflitos por tipo para exibição
+  const conflictSummary = useMemo(() => {
+    const summary = { sala: new Set<string>(), professor: new Set<string>(), semestre: new Set<string>() };
+    
+    conflictData.conflictDetails.forEach((conflicts) => {
+      conflicts.forEach((conflict) => {
+        summary[conflict.conflictType].add(conflict.conflictValue);
+      });
+    });
+    
+    return {
+      sala: Array.from(summary.sala),
+      professor: Array.from(summary.professor),
+      semestre: Array.from(summary.semestre),
+      total: conflictData.conflictIds.size
+    };
+  }, [conflictData]);
 
   // Notify parent when events change
   const notifyEventsChange = (newEvents: Event[]) => {
@@ -169,6 +341,17 @@ const Timetable = forwardRef<TimetableRef, TimetableProps>(({ onEventClick, onEv
   const handleEventClick = (info: any) => {
     const eventData = createEventDataFromFullCalendar(info.event);
     setSelectedEventId(eventData.id);
+    
+    // Verificar se há conflitos e mostrar alerta
+    if (eventData.id && conflictData.conflictDetails.has(eventData.id)) {
+      const conflicts = conflictData.conflictDetails.get(eventData.id) || [];
+      const conflictDesc = getConflictDescription(conflicts);
+      if (conflictDesc) {
+        setTimeout(() => {
+          alert(`⚠️ CONFLITO DETECTADO:\n\n${conflictDesc}\n\nClique em "Editar" para resolver o conflito.`);
+        }, 100);
+      }
+    }
     
     if (onEventClick) {
       onEventClick(eventData);
@@ -362,276 +545,343 @@ const Timetable = forwardRef<TimetableRef, TimetableProps>(({ onEventClick, onEv
   }, [showSearchModal]);
 
   return (
-    <div className="w-full h-full flex flex-col border border-gray-200 rounded-lg shadow-sm bg-white">
-      <div className="flex items-center justify-between p-2 border-b">
-        {/* Navegação com setas */}
-        <div className="flex items-center space-x-2">
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            className="h-8 w-8"
-            onClick={navigatePrevious}
-            disabled={currentOptions.length === 0}
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
+    <>
+      {/* Estilos CSS para conflitos */}
+      <style dangerouslySetInnerHTML={{
+        __html: `
+          .conflict-event {
+            animation: pulse-red 2s infinite;
+          }
           
-          <div className="min-w-[180px] text-center relative">
-            <div className="text-xs text-gray-500 uppercase tracking-wider">
-              {activeFilterType.charAt(0).toUpperCase() + activeFilterType.slice(1)}
-            </div>
-            <div 
-              className="font-medium text-sm cursor-pointer hover:bg-gray-100 px-2 py-1 rounded transition-colors"
-              onClick={openSearchModal}
-              title="Clique para pesquisar"
+          @keyframes pulse-red {
+            0%, 100% {
+              box-shadow: 0 0 0 2px #dc2626;
+            }
+            50% {
+              box-shadow: 0 0 0 4px #dc2626;
+            }
+          }
+          
+          .fc-event.conflict-event {
+            border: 2px solid #dc2626 !important;
+            background-color: #fee2e2 !important;
+            color: #7f1d1d !important;
+          }
+          
+          .fc-event.conflict-event:hover {
+            background-color: #fecaca !important;
+          }
+          
+          .fc-event.conflict-event::after {
+            content: "⚠";
+            position: absolute;
+            top: 2px;
+            right: 2px;
+            color: #dc2626;
+            font-weight: bold;
+            font-size: 12px;
+            text-shadow: 0 0 2px white;
+          }
+        `
+      }} />
+      
+      <div className="w-full h-full flex flex-col border border-gray-200 rounded-lg shadow-sm bg-white">
+        <div className="flex items-center justify-between p-2 border-b">
+          {/* Navegação com setas */}
+          <div className="flex items-center space-x-2">
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="h-8 w-8"
+              onClick={navigatePrevious}
+              disabled={currentOptions.length === 0}
             >
-              {getNavigationDisplayText()}
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            
+            <div className="min-w-[180px] text-center relative">
+              <div className="text-xs text-gray-500 uppercase tracking-wider">
+                {activeFilterType.charAt(0).toUpperCase() + activeFilterType.slice(1)}
+              </div>
+              <div 
+                className="font-medium text-sm cursor-pointer hover:bg-gray-100 px-2 py-1 rounded transition-colors"
+                onClick={openSearchModal}
+                title="Clique para pesquisar"
+              >
+                {getNavigationDisplayText()}
+              </div>
+              
+              {/* Modal de pesquisa */}
+              {showSearchModal && (
+                <div 
+                  id="search-modal"
+                  className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 w-80 bg-white border border-gray-300 rounded-lg shadow-lg z-50"
+                >
+                  <div className="p-3 border-b border-gray-200">
+                    <div className="text-sm font-medium text-gray-700 mb-2">
+                      Pesquisar {activeFilterType}
+                    </div>
+                    <div className="relative">
+                      <Search size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                      <input
+                        type="text"
+                        placeholder={`Digite para buscar ${activeFilterType}...`}
+                        value={searchModalTerm}
+                        onChange={(e) => setSearchModalTerm(e.target.value)}
+                        className="w-full pl-9 pr-3 py-2 text-sm border border-gray-200 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        autoFocus
+                      />
+                    </div>
+                  </div>
+
+                  <div className="max-h-48 overflow-y-auto">
+                    {currentValue && (
+                      <div
+                        className="px-3 py-2 text-sm cursor-pointer hover:bg-red-50 border-b border-gray-100 text-red-600"
+                        onClick={() => selectFromModal('')}
+                      >
+                        <div className="font-medium flex items-center">
+                          <X size={14} className="mr-2" />
+                          Limpar seleção
+                        </div>
+                      </div>
+                    )}
+                    
+                    {filteredModalOptions.length > 0 ? (
+                      filteredModalOptions.map((option, index) => (
+                        <div
+                          key={index}
+                          className={`px-3 py-2 text-sm cursor-pointer hover:bg-blue-50 ${
+                            currentValue === option ? 'bg-blue-100 text-blue-800' : ''
+                          }`}
+                          onClick={() => selectFromModal(option)}
+                        >
+                          <div className="font-medium">{option}</div>
+                          {activeFilterType === 'professor' && (
+                            (() => {
+                              const prof = academicData.professores.find(p => p.nome === option);
+                              return prof ? (
+                                <div className="text-xs text-gray-500">
+                                  {prof.departamento} - {prof.especialidade}
+                                </div>
+                              ) : null;
+                            })()
+                          )}
+                          {activeFilterType === 'sala' && (
+                            (() => {
+                              const sala = academicData.salas.find(s => s.codigo === option);
+                              return sala ? (
+                                <div className="text-xs text-gray-500">
+                                  {sala.tipo} - Bloco {sala.bloco}, {sala.andar}º andar
+                                </div>
+                              ) : null;
+                            })()
+                          )}
+                          {activeFilterType === 'semestre' && (
+                            (() => {
+                              const semestre = academicData.semestres.find(s => s.codigo === option);
+                              return semestre ? (
+                                <div className="text-xs text-gray-500">
+                                  {semestre.nome}
+                                </div>
+                              ) : null;
+                            })()
+                          )}
+                        </div>
+                      ))
+                    ) : (
+                      <div className="px-3 py-4 text-sm text-gray-500 text-center">
+                        <Search size={16} className="mx-auto mb-2" />
+                        Nenhum resultado encontrado para "{searchModalTerm}"
+                      </div>
+                    )}
+                  </div>
+                  
+                  {filteredModalOptions.length > 0 && (
+                    <div className="px-3 py-2 border-t border-gray-200 text-xs text-gray-500 text-center">
+                      {filteredModalOptions.length} de {currentOptions.length} opções
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
             
-            {/* Modal de pesquisa */}
-            {showSearchModal && (
-              <div 
-                id="search-modal"
-                className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 w-80 bg-white border border-gray-300 rounded-lg shadow-lg z-50"
-              >
-                <div className="p-3 border-b border-gray-200">
-                  <div className="text-sm font-medium text-gray-700 mb-2">
-                    Pesquisar {activeFilterType}
-                  </div>
-                  <div className="relative">
-                    <Search size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                    <input
-                      type="text"
-                      placeholder={`Digite para buscar ${activeFilterType}...`}
-                      value={searchModalTerm}
-                      onChange={(e) => setSearchModalTerm(e.target.value)}
-                      className="w-full pl-9 pr-3 py-2 text-sm border border-gray-200 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      autoFocus
-                    />
-                  </div>
-                </div>
-
-                <div className="max-h-48 overflow-y-auto">
-                  {currentValue && (
-                    <div
-                      className="px-3 py-2 text-sm cursor-pointer hover:bg-red-50 border-b border-gray-100 text-red-600"
-                      onClick={() => selectFromModal('')}
-                    >
-                      <div className="font-medium flex items-center">
-                        <X size={14} className="mr-2" />
-                        Limpar seleção
-                      </div>
-                    </div>
-                  )}
-                  
-                  {filteredModalOptions.length > 0 ? (
-                    filteredModalOptions.map((option, index) => (
-                      <div
-                        key={index}
-                        className={`px-3 py-2 text-sm cursor-pointer hover:bg-blue-50 ${
-                          currentValue === option ? 'bg-blue-100 text-blue-800' : ''
-                        }`}
-                        onClick={() => selectFromModal(option)}
-                      >
-                        <div className="font-medium">{option}</div>
-                        {activeFilterType === 'professor' && (
-                          (() => {
-                            const prof = academicData.professores.find(p => p.nome === option);
-                            return prof ? (
-                              <div className="text-xs text-gray-500">
-                                {prof.departamento} - {prof.especialidade}
-                              </div>
-                            ) : null;
-                          })()
-                        )}
-                        {activeFilterType === 'sala' && (
-                          (() => {
-                            const sala = academicData.salas.find(s => s.codigo === option);
-                            return sala ? (
-                              <div className="text-xs text-gray-500">
-                                {sala.tipo} - Bloco {sala.bloco}, {sala.andar}º andar
-                              </div>
-                            ) : null;
-                          })()
-                        )}
-                        {activeFilterType === 'semestre' && (
-                          (() => {
-                            const semestre = academicData.semestres.find(s => s.codigo === option);
-                            return semestre ? (
-                              <div className="text-xs text-gray-500">
-                                {semestre.nome}
-                              </div>
-                            ) : null;
-                          })()
-                        )}
-                      </div>
-                    ))
-                  ) : (
-                    <div className="px-3 py-4 text-sm text-gray-500 text-center">
-                      <Search size={16} className="mx-auto mb-2" />
-                      Nenhum resultado encontrado para "{searchModalTerm}"
-                    </div>
-                  )}
-                </div>
-                
-                {filteredModalOptions.length > 0 && (
-                  <div className="px-3 py-2 border-t border-gray-200 text-xs text-gray-500 text-center">
-                    {filteredModalOptions.length} de {currentOptions.length} opções
-                  </div>
-                )}
-              </div>
-            )}
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="h-8 w-8"
+              onClick={navigateNext}
+              disabled={currentOptions.length === 0}
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
           </div>
           
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            className="h-8 w-8"
-            onClick={navigateNext}
-            disabled={currentOptions.length === 0}
-          >
-            <ChevronRight className="h-4 w-4" />
-          </Button>
-        </div>
-        
-        {/* Botões de seleção de tipo de filtro */}
-        <div className="flex items-center divide-x divide-gray-200 rounded-md overflow-hidden border border-gray-300">
-          <Button
-            variant="outline"
-            className={`text-sm h-8 rounded-none border-none px-4 ${
-              activeFilterType === 'professor' 
-                ? 'bg-pampa-green text-white' 
-                : 'bg-white hover:bg-gray-50'
-            }`}
-            onClick={() => setActiveFilterType('professor')}
-          >
-            Professor
-          </Button>
-          <Button
-            variant="outline"
-            className={`text-sm h-8 rounded-none border-none px-4 ${
-              activeFilterType === 'semestre' 
-                ? 'bg-pampa-green text-white' 
-                : 'bg-white hover:bg-gray-50'
-            }`}
-            onClick={() => setActiveFilterType('semestre')}
-          >
-            Semestre
-          </Button>
-          <Button
-            variant="outline"
-            className={`text-sm h-8 rounded-none border-none px-4 ${
-              activeFilterType === 'sala' 
-                ? 'bg-pampa-green text-white' 
-                : 'bg-white hover:bg-gray-50'
-            }`}
-            onClick={() => setActiveFilterType('sala')}
-          >
-            Sala
-          </Button>
-        </div>
-        
-        {/* Campo de pesquisa e botão limpar */}
-        <div className="flex items-center space-x-2">
-          <div className="relative">
-            <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-3 w-3 text-gray-500" />
-            <input
-              type="text"
-              placeholder="Pesquisar..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-7 pr-8 py-1 w-full border rounded-md text-xs min-w-[140px]"
-            />
-            {searchTerm && (
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                className="absolute right-1 top-1/2 transform -translate-y-1/2 h-6 w-6 p-1"
-                onClick={() => setSearchTerm('')}
+          {/* Botões de seleção de tipo de filtro */}
+          <div className="flex items-center divide-x divide-gray-200 rounded-md overflow-hidden border border-gray-300">
+            <Button
+              variant="outline"
+              className={`text-sm h-8 rounded-none border-none px-4 ${
+                activeFilterType === 'professor' 
+                  ? 'bg-pampa-green text-white' 
+                  : 'bg-white hover:bg-gray-50'
+              }`}
+              onClick={() => setActiveFilterType('professor')}
+            >
+              Professor
+            </Button>
+            <Button
+              variant="outline"
+              className={`text-sm h-8 rounded-none border-none px-4 ${
+                activeFilterType === 'semestre' 
+                  ? 'bg-pampa-green text-white' 
+                  : 'bg-white hover:bg-gray-50'
+              }`}
+              onClick={() => setActiveFilterType('semestre')}
+            >
+              Semestre
+            </Button>
+            <Button
+              variant="outline"
+              className={`text-sm h-8 rounded-none border-none px-4 ${
+                activeFilterType === 'sala' 
+                  ? 'bg-pampa-green text-white' 
+                  : 'bg-white hover:bg-gray-50'
+              }`}
+              onClick={() => setActiveFilterType('sala')}
+            >
+              Sala
+            </Button>
+          </div>
+          
+          {/* Campo de pesquisa e botão limpar */}
+          <div className="flex items-center space-x-2">
+            <div className="relative">
+              <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-3 w-3 text-gray-500" />
+              <input
+                type="text"
+                placeholder="Pesquisar..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-7 pr-8 py-1 w-full border rounded-md text-xs min-w-[140px]"
+              />
+              {searchTerm && (
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="absolute right-1 top-1/2 transform -translate-y-1/2 h-6 w-6 p-1"
+                  onClick={() => setSearchTerm('')}
+                >
+                  <X className="h-3 w-3" />
+                </Button>
+              )}
+            </div>
+            
+            {hasActiveFilters && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={clearAllFilters}
+                className="text-xs h-8 px-2"
               >
-                <X className="h-3 w-3" />
+                Limpar Filtros
               </Button>
             )}
           </div>
-          
-          {hasActiveFilters && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={clearAllFilters}
-              className="text-xs h-8 px-2"
-            >
-              Limpar Filtros
-            </Button>
-          )}
         </div>
-      </div>
 
-      {/* Indicador de filtros ativos */}
-      {hasActiveFilters && (
-        <div className="px-2 py-1 bg-blue-50 border-b border-blue-200 text-xs">
-          <div className="flex items-center justify-between">
-            <span className="text-blue-700">
-              Exibindo {filteredEvents.length} de {events.length} eventos
-            </span>
-            <div className="flex items-center space-x-2">
-              {selectedValues.professor && (
-                <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs flex items-center">
-                  Prof: {selectedValues.professor}
-                  <X 
-                    size={12} 
-                    className="ml-1 cursor-pointer hover:bg-blue-200 rounded" 
-                    onClick={() => setSelectedValues(prev => ({ ...prev, professor: '' }))}
-                  />
+        {/* Indicador de filtros ativos */}
+        {(hasActiveFilters || conflictSummary.total > 0) && (
+          <div className="px-2 py-1 bg-blue-50 border-b border-blue-200 text-xs">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-4">
+                <span className="text-blue-700">
+                  Exibindo {filteredEvents.length} de {events.length} eventos
                 </span>
-              )}
-              {selectedValues.sala && (
-                <span className="bg-green-100 text-green-800 px-2 py-1 rounded text-xs flex items-center">
-                  Sala: {selectedValues.sala}
-                  <X 
-                    size={12} 
-                    className="ml-1 cursor-pointer hover:bg-green-200 rounded" 
-                    onClick={() => setSelectedValues(prev => ({ ...prev, sala: '' }))}
-                  />
-                </span>
-              )}
-              {selectedValues.semestre && (
-                <span className="bg-purple-100 text-purple-800 px-2 py-1 rounded text-xs flex items-center">
-                  Sem: {selectedValues.semestre}
-                  <X 
-                    size={12} 
-                    className="ml-1 cursor-pointer hover:bg-purple-200 rounded" 
-                    onClick={() => setSelectedValues(prev => ({ ...prev, semestre: '' }))}
-                  />
-                </span>
-              )}
-              {searchTerm && (
-                <span className="bg-gray-100 text-gray-800 px-2 py-1 rounded text-xs flex items-center">
-                  "{searchTerm}"
-                  <X 
-                    size={12} 
-                    className="ml-1 cursor-pointer hover:bg-gray-200 rounded" 
-                    onClick={() => setSearchTerm('')}
-                  />
-                </span>
-              )}
+                
+                {conflictSummary.total > 0 && (
+                  <div className="bg-red-100 text-red-800 px-2 py-1 rounded text-xs font-medium flex items-center space-x-2">
+                    <span>⚠️ {conflictSummary.total} eventos com conflito</span>
+                    <div className="text-xs opacity-75">
+                      {conflictSummary.sala.length > 0 && (
+                        <span className="bg-red-200 px-1 rounded mr-1">
+                          🏢 {conflictSummary.sala.length} sala{conflictSummary.sala.length > 1 ? 's' : ''}
+                        </span>
+                      )}
+                      {conflictSummary.professor.length > 0 && (
+                        <span className="bg-red-200 px-1 rounded mr-1">
+                          👨‍🏫 {conflictSummary.professor.length} prof{conflictSummary.professor.length > 1 ? 's' : ''}
+                        </span>
+                      )}
+                      {conflictSummary.semestre.length > 0 && (
+                        <span className="bg-red-200 px-1 rounded">
+                          📅 {conflictSummary.semestre.length} sem{conflictSummary.semestre.length > 1 ? 's' : ''}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+              
+              <div className="flex items-center space-x-2">
+                {selectedValues.professor && (
+                  <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs flex items-center">
+                    Prof: {selectedValues.professor}
+                    <X 
+                      size={12} 
+                      className="ml-1 cursor-pointer hover:bg-blue-200 rounded" 
+                      onClick={() => setSelectedValues(prev => ({ ...prev, professor: '' }))}
+                    />
+                  </span>
+                )}
+                {selectedValues.sala && (
+                  <span className="bg-green-100 text-green-800 px-2 py-1 rounded text-xs flex items-center">
+                    Sala: {selectedValues.sala}
+                    <X 
+                      size={12} 
+                      className="ml-1 cursor-pointer hover:bg-green-200 rounded" 
+                      onClick={() => setSelectedValues(prev => ({ ...prev, sala: '' }))}
+                    />
+                  </span>
+                )}
+                {selectedValues.semestre && (
+                  <span className="bg-purple-100 text-purple-800 px-2 py-1 rounded text-xs flex items-center">
+                    Sem: {selectedValues.semestre}
+                    <X 
+                      size={12} 
+                      className="ml-1 cursor-pointer hover:bg-purple-200 rounded" 
+                      onClick={() => setSelectedValues(prev => ({ ...prev, semestre: '' }))}
+                    />
+                  </span>
+                )}
+                {searchTerm && (
+                  <span className="bg-gray-100 text-gray-800 px-2 py-1 rounded text-xs flex items-center">
+                    "{searchTerm}"
+                    <X 
+                      size={12} 
+                      className="ml-1 cursor-pointer hover:bg-gray-200 rounded" 
+                      onClick={() => setSearchTerm('')}
+                    />
+                  </span>
+                )}
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
 
-      <div className="flex-1 min-h-0 overflow-hidden">
-        <div className="h-full">
-          <EventCalendar 
-            events={filteredEvents}
-            onEventClick={handleEventClick}
-            onEventDrop={handleEventDrop}
-            onEventResize={handleEventResize}
-            onEventReceive={handleEventReceive}
-          />
+        <div className="flex-1 min-h-0 overflow-hidden">
+          <div className="h-full">
+            <EventCalendar 
+              events={styledFilteredEvents}
+              onEventClick={handleEventClick}
+              onEventDrop={handleEventDrop}
+              onEventResize={handleEventResize}
+              onEventReceive={handleEventReceive}
+            />
+          </div>
         </div>
       </div>
-    </div>
+    </>
   );
 });
 
