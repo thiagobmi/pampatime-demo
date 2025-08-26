@@ -105,7 +105,6 @@ const Index = () => {
           <div className="lg:col-span-1 h-full overflow-auto">
             <SidePanel 
               selectedEvent={selectedEvent}
-              existingEvents={existingEvents}
               onEventUpdate={handleEventUpdate}
               onEventAdd={handleEventAdd}
               onEventDelete={handleEventDelete}

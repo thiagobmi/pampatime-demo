@@ -1,12 +1,10 @@
-// src/components/ClassCard.tsx
 import React, { useRef, useEffect } from 'react';
-import { getEventTypeColors } from '@/types/Event';
 
 interface ClassCardProps {
   title: string;
   room?: string;
   professor?: string;
-  type: string; // Modalidade
+  type: string; // Para disciplinas, será o código
   className?: string;
   roomInfo?: string;
   event?: any;
@@ -16,86 +14,62 @@ const ClassCard: React.FC<ClassCardProps> = ({
   title,
   room,
   professor,
-  type, // type agora representa a modalidade
+  type, // Para disciplinas, type será o código
   className,
   roomInfo,
   event
 }) => {
   const cardRef = useRef<HTMLDivElement>(null);
   
-  // Generate colors dynamically based on modalidade (type)
-  const colors = getEventTypeColors(type);
-  
-  // Create event data for FullCalendar dragging with ALL properties
-  const eventData = {
-    title: title,
-    backgroundColor: colors.bg,
-    borderColor: colors.border,
-    textColor: colors.text,
-    // Use extendedProps to store ALL custom properties
-    extendedProps: {
-      room: room || event?.room,
-      professor: professor || event?.professor,
-      type: type || event?.type, // Modalidade
-      semester: event?.semester,
-      class: event?.class,
-      // Include any other properties from the original event
-      ...event?.extendedProps
-    }
-  };
-  
-  useEffect(() => {
-    if (cardRef.current) {
-      // Store complete event data including all properties
-      cardRef.current.setAttribute('data-event', JSON.stringify(eventData));
-    }
-  }, [title, room, professor, type, roomInfo, colors, event]);
-  
-  // Card styles with dynamic colors based on modalidade
+  // Para disciplinas arrastáveis, usar sempre cor cinza
   const cardStyle = {
-    backgroundColor: colors.bg,
-    borderLeft: `4px solid ${colors.border}`,
-    color: colors.text,
+    backgroundColor: '#f3f4f6', // gray-100
+    borderLeft: `4px solid #9ca3af`, // gray-400
+    color: '#374151', // gray-700
     padding: '8px',
     borderRadius: '4px',
     marginBottom: '8px'
   };
   
+  // Create event data for FullCalendar dragging com campos vazios
+  const eventData = {
+    title: title,
+    backgroundColor: '#f3f4f6', // gray-100
+    borderColor: '#9ca3af', // gray-400
+    textColor: '#374151', // gray-700
+    extendedProps: {
+      room: '', // Vazio
+      professor: '', // Vazio
+      type: '', // Vazio - será preenchido no formulário
+      semester: '', // Vazio
+      class: '', // Vazio
+      codigo: event?.codigo || '', // Manter código para referência
+      departamento: event?.departamento || ''
+    }
+  };
+  
+  useEffect(() => {
+    if (cardRef.current) {
+      cardRef.current.setAttribute('data-event', JSON.stringify(eventData));
+    }
+  }, [title, type, event]);
+  
   return (
     <div
       ref={cardRef}
-      className={`class-card shadow-sm ${className || ''} cursor-move`}
+      className={`class-card shadow-sm ${className || ''} cursor-move hover:shadow-lg transition-shadow`}
       style={cardStyle}
       draggable="true"
     >
-      <div className="font-medium">{title}</div>
-      {(room || event?.room) && (
-        <div className="text-xs opacity-75">
-          Sala: {room || event?.room}
+      <div className="font-medium text-sm">{title}</div>
+      <div className="text-xs opacity-75 font-semibold">
+        Código: {type}
+      </div>
+      {event?.departamento && (
+        <div className="text-xs opacity-60 mt-1">
+          {event.departamento}
         </div>
       )}
-      {(professor || event?.professor) && (
-        <div className="text-xs opacity-75">
-          Professor: {professor || event?.professor}
-        </div>
-      )}
-      {event?.semester && (
-        <div className="text-xs opacity-75">
-          Semestre: {event.semester}
-        </div>
-      )}
-      {event?.class && (
-        <div className="text-xs opacity-75">
-          Turma: {event.class}
-        </div>
-      )}
-      {/* Mostrar a modalidade */}
-      {type && (
-        <div className="text-xs opacity-75 font-semibold">
-          Modalidade: {type}
-        </div>
-      )}
-      {roomInfo && <div className="text-xs mt-1 opacity-60">{roomInfo}</div>}
     </div>
   );
 };

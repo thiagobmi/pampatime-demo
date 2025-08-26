@@ -4,13 +4,13 @@ import { Button } from "@/components/ui/button";
 import ClassCard from './ClassCard';
 import { Search } from 'lucide-react';
 import { Draggable } from '@fullcalendar/interaction';
-import { Event } from '@/types/Event';
+import { getAcademicData } from '@/utils/academicDataUtils';
 
 interface ClassesPanelProps {
-  existingEvents: Event[];
+  // Removemos a dependência de existingEvents
 }
 
-const ClassesPanel: React.FC<ClassesPanelProps> = ({ existingEvents }) => {
+const ClassesPanel: React.FC<ClassesPanelProps> = () => {
   const draggableContainerRef = useRef(null);
   const [searchTerm, setSearchTerm] = React.useState('');
 
@@ -27,38 +27,28 @@ const ClassesPanel: React.FC<ClassesPanelProps> = ({ existingEvents }) => {
     }
   }, []);
 
-  // Agrupar eventos únicos por título (disciplina)
-  const uniqueEvents = React.useMemo(() => {
-    const eventMap = new Map<string, Event>();
-    
-    existingEvents.forEach(event => {
-      // Usar o título como chave para manter apenas disciplinas únicas
-      if (!eventMap.has(event.title)) {
-        eventMap.set(event.title, event);
-      }
-    });
-    
-    return Array.from(eventMap.values());
-  }, [existingEvents]);
+  // Obter todas as disciplinas do JSON
+  const academicData = getAcademicData();
+  const allDisciplinas = academicData.disciplinas;
 
-  // Filtrar eventos baseado na pesquisa
-  const filteredEvents = React.useMemo(() => {
-    if (!searchTerm) return uniqueEvents;
+  // Filtrar disciplinas baseado na pesquisa
+  const filteredDisciplinas = React.useMemo(() => {
+    if (!searchTerm) return allDisciplinas;
     
     const searchLower = searchTerm.toLowerCase();
-    return uniqueEvents.filter(event => 
-      event.title.toLowerCase().includes(searchLower) ||
-      event.professor?.toLowerCase().includes(searchLower) ||
-      event.room?.toLowerCase().includes(searchLower) ||
-      event.type?.toLowerCase().includes(searchLower)
+    return allDisciplinas.filter(disciplina => 
+      disciplina.nome.toLowerCase().includes(searchLower) ||
+      disciplina.codigo.toLowerCase().includes(searchLower) ||
+      disciplina.tipo.toLowerCase().includes(searchLower) ||
+      disciplina.departamento.toLowerCase().includes(searchLower)
     );
-  }, [uniqueEvents, searchTerm]);
+  }, [allDisciplinas, searchTerm]);
 
   return (
     <div className="bg-white p-3 rounded-lg border border-gray-200 shadow-sm flex flex-col h-full min-h-0">
       <div className="flex-shrink-0 mb-3">
         <h3 className="text-sm font-semibold text-gray-700 mb-2">
-          Disciplinas no Calendário ({uniqueEvents.length})
+          Disciplinas Disponíveis ({filteredDisciplinas.length})
         </h3>
         
         <div className="relative">
@@ -84,15 +74,25 @@ const ClassesPanel: React.FC<ClassesPanelProps> = ({ existingEvents }) => {
       </div>
         
       <div ref={draggableContainerRef} className="space-y-2 overflow-y-auto flex-1">
-        {filteredEvents.length > 0 ? (
-          filteredEvents.map((event) => (
+        {filteredDisciplinas.length > 0 ? (
+          filteredDisciplinas.map((disciplina) => (
             <ClassCard 
-              key={`draggable-${event.id}`}
-              title={event.title}
-              room={event.room}
-              professor={event.professor}
-              type={event.type || ''}
-              event={event}
+              key={`disciplina-${disciplina.id}`}
+              title={disciplina.nome}
+              type={disciplina.codigo} // Usar código como tipo para exibição
+              // Passar dados mínimos como evento para arrastar
+              event={{
+                id: `disciplina-${disciplina.id}`,
+                title: disciplina.nome,
+                type: '', // Deixar vazio - será preenchido no formulário
+                room: '',
+                professor: '',
+                semester: '',
+                class: '',
+                codigo: disciplina.codigo,
+                departamento: disciplina.departamento
+              }}
+              className="hover:shadow-md transition-shadow"
             />
           ))
         ) : (
@@ -109,18 +109,18 @@ const ClassesPanel: React.FC<ClassesPanelProps> = ({ existingEvents }) => {
               </div>
             ) : (
               <div>
-                <p className="text-sm mb-2">Nenhuma disciplina no calendário</p>
-                <p className="text-xs">Adicione disciplinas usando o formulário acima</p>
+                <p className="text-sm mb-2">Nenhuma disciplina disponível</p>
+                <p className="text-xs">Verifique os dados acadêmicos</p>
               </div>
             )}
           </div>
         )}
       </div>
       
-      {filteredEvents.length > 0 && (
+      {filteredDisciplinas.length > 0 && (
         <div className="mt-3 pt-3 border-t border-gray-200">
           <p className="text-xs text-gray-500 text-center">
-            Arraste para duplicar no calendário
+            Arraste as disciplinas para o calendário para criar eventos
           </p>
         </div>
       )}
