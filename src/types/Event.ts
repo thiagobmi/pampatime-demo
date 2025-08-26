@@ -8,7 +8,7 @@ export interface Event {
   professor?: string;
   semester?: string;
   class?: string;
-  type?: string;
+  type?: string; // Modalidade (Teórica, Prática, Assíncrona)
   backgroundColor?: string;
   borderColor?: string;
   textColor?: string;
@@ -21,46 +21,60 @@ export interface EventColors {
   text: string;
 }
 
-// Helper function to generate consistent colors based on string hash
-const generateColorsFromString = (str: string): EventColors => {
-  if (!str || str.trim() === '') {
-    // Default colors for empty/undefined types
-    return {
-      bg: '#f3f4f6',
-      border: '#9ca3af',
-      text: '#374151'
-    };
+// Cores específicas para modalidades
+const MODALIDADE_COLORS: { [key: string]: EventColors } = {
+  'Teórica': {
+    bg: '#dbeafe',     // blue-100
+    border: '#3b82f6', // blue-500
+    text: '#1e3a8a'    // blue-900
+  },
+  'Prática': {
+    bg: '#dcfce7',     // green-100
+    border: '#22c55e', // green-500
+    text: '#14532d'    // green-900
+  },
+  'Assíncrona': {
+    bg: '#fef3c7',     // yellow-100
+    border: '#eab308', // yellow-500
+    text: '#713f12'    // yellow-900
   }
-  
-  // Create a hash from the string
-  let hash = 0;
-  const normalizedStr = str.toLowerCase().trim();
-  
-  for (let i = 0; i < normalizedStr.length; i++) {
-    const char = normalizedStr.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
-    hash = hash & hash; // Convert to 32-bit integer
-  }
-  
-  // Generate HSL color from hash
-  const hue = Math.abs(hash) % 360;
-  
-  // Use different ranges for better color distribution
-  const saturation = 45 + (Math.abs(hash >> 8) % 35); // 45-80% saturation
-  const lightness = 88; // Light background for readability
-  const borderLightness = 50; // Darker border
-  const textLightness = 25; // Dark text for contrast
-  
-  return {
-    bg: `hsl(${hue}, ${saturation}%, ${lightness}%)`,
-    border: `hsl(${hue}, ${saturation}%, ${borderLightness}%)`,
-    text: `hsl(${hue}, ${saturation}%, ${textLightness}%)`
-  };
 };
 
-// Main function to get colors for event type
-export const getEventTypeColors = (type: string = ''): EventColors => {
-  return generateColorsFromString(type);
+// Cores para conflitos
+export const CONFLICT_COLORS: EventColors = {
+  bg: '#fee2e2',       // red-100
+  border: '#dc2626',   // red-600
+  text: '#7f1d1d'      // red-900
+};
+
+// Cor padrão para modalidades não reconhecidas
+const DEFAULT_COLORS: EventColors = {
+  bg: '#f3f4f6',       // gray-100
+  border: '#9ca3af',   // gray-400
+  text: '#374151'      // gray-700
+};
+
+// Função principal para obter cores baseadas na modalidade
+export const getEventTypeColors = (modalidade: string = ''): EventColors => {
+  const normalizedModalidade = modalidade.trim();
+  
+  if (MODALIDADE_COLORS[normalizedModalidade]) {
+    return MODALIDADE_COLORS[normalizedModalidade];
+  }
+  
+  return DEFAULT_COLORS;
+};
+
+// Helper function to apply colors to an event (sempre usa cores da modalidade, não do conflito)
+export const applyEventColors = (event: Partial<Event>): Event => {
+  const colors = getEventTypeColors(event.type || '');
+  
+  return {
+    ...event,
+    backgroundColor: colors.bg,
+    borderColor: colors.border,
+    textColor: colors.text,
+  } as Event;
 };
 
 // Fixed week dates - first week of 2020 (January 6-10, 2020)
@@ -90,18 +104,6 @@ export const getFixedDateForDay = (dayName: string): Date => {
   return dayMap[dayName] || FIXED_WEEK_DATES.monday;
 };
 
-// Helper function to apply colors to an event
-export const applyEventColors = (event: Partial<Event>): Event => {
-  const colors = getEventTypeColors(event.type || '');
-  
-  return {
-    ...event,
-    backgroundColor: colors.bg,
-    borderColor: colors.border,
-    textColor: colors.text,
-  } as Event;
-};
-
 // Helper function to create event with fixed date and auto-generated colors
 export const createEventWithFixedDate = (
   title: string,
@@ -113,7 +115,7 @@ export const createEventWithFixedDate = (
     professor?: string;
     semester?: string;
     class?: string;
-    type?: string;
+    type?: string; // Modalidade
     id?: string | number;
   } = {}
 ): Event => {
@@ -139,7 +141,7 @@ export const createEventWithFixedDate = (
     professor: options.professor,
     semester: options.semester,
     class: options.class,
-    type: options.type || '',
+    type: options.type || '', // Modalidade
     allDay: false,
   };
   

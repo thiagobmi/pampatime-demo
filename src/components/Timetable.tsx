@@ -2,7 +2,7 @@ import React, { forwardRef, useImperativeHandle, useRef, useState, useMemo } fro
 import { ChevronLeft, ChevronRight, Search, X } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { EventCalendar } from './EventCalendar';
-import { getEventTypeColors } from '@/types/Event';
+import { getEventTypeColors, applyEventColors, CONFLICT_COLORS } from '@/types/Event';
 import { getAcademicData } from '@/utils/academicDataUtils';
 
 interface ConflictInfo {
@@ -277,21 +277,32 @@ const Timetable = forwardRef<TimetableRef, TimetableProps>(({ onEventClick, onEv
     });
   }, [events, searchTerm, selectedValues]);
 
-  // Aplicar estilos de conflito aos eventos
+  // Aplicar estilos de conflito aos eventos - CORRIGIDO
   const styledFilteredEvents = useMemo(() => {
     return filteredEvents.map(event => {
       if (event.id && conflictData.conflictIds.has(event.id)) {
+        // Para eventos em conflito, usar cores vermelhas
         const eventConflicts = conflictData.conflictDetails.get(event.id) || [];
         return {
           ...event,
-          backgroundColor: '#fee2e2',
-          borderColor: '#dc2626',
-          textColor: '#7f1d1d',
+          backgroundColor: CONFLICT_COLORS.bg,
+          borderColor: CONFLICT_COLORS.border,
+          textColor: CONFLICT_COLORS.text,
           className: 'conflict-event',
           conflictInfo: eventConflicts
         };
       }
-      return event;
+      
+      // Para eventos sem conflito, usar cores baseadas na modalidade
+      const colors = getEventTypeColors(event.type || '');
+      return {
+        ...event,
+        backgroundColor: colors.bg,
+        borderColor: colors.border,
+        textColor: colors.text,
+        className: '',
+        conflictInfo: undefined
+      };
     });
   }, [filteredEvents, conflictData]);
 
@@ -359,11 +370,15 @@ const Timetable = forwardRef<TimetableRef, TimetableProps>(({ onEventClick, onEv
   };
 
   const handleEventDrop = (info: any) => {
+    // Criar o evento atualizado com as cores corretas da modalidade
+    const updatedEventData = createEventDataFromFullCalendar(info.event);
+    const recoloredEvent = applyEventColors(updatedEventData);
+    
     setEvents(prevEvents => {
       const updatedEvents = prevEvents.map(event => 
         event.id === info.event.id 
           ? {
-              ...event,
+              ...recoloredEvent,
               start: info.event.start,
               end: info.event.end
             }
@@ -374,17 +389,24 @@ const Timetable = forwardRef<TimetableRef, TimetableProps>(({ onEventClick, onEv
     });
 
     if (selectedEventId === info.event.id && onEventChange) {
-      const updatedEventData = createEventDataFromFullCalendar(info.event);
-      onEventChange(updatedEventData);
+      onEventChange({
+        ...recoloredEvent,
+        start: info.event.start,
+        end: info.event.end
+      });
     }
   };
 
   const handleEventResize = (info: any) => {
+    // Criar o evento redimensionado com as cores corretas da modalidade
+    const resizedEventData = createEventDataFromFullCalendar(info.event);
+    const recoloredEvent = applyEventColors(resizedEventData);
+    
     setEvents(prevEvents => {
       const updatedEvents = prevEvents.map(event => 
         event.id === info.event.id 
           ? {
-              ...event,
+              ...recoloredEvent,
               start: info.event.start,
               end: info.event.end
             }
@@ -395,8 +417,11 @@ const Timetable = forwardRef<TimetableRef, TimetableProps>(({ onEventClick, onEv
     });
 
     if (selectedEventId === info.event.id && onEventChange) {
-      const updatedEventData = createEventDataFromFullCalendar(info.event);
-      onEventChange(updatedEventData);
+      onEventChange({
+        ...recoloredEvent,
+        start: info.event.start,
+        end: info.event.end
+      });
     }
   };
 
@@ -411,7 +436,6 @@ const Timetable = forwardRef<TimetableRef, TimetableProps>(({ onEventClick, onEv
     info.event.remove();
     
     const newEventId = `event-${Date.now()}-${Math.random()}`;
-    const colors = getEventTypeColors(eventData.extendedProps?.type || '');
     
     const newEvent: Event = {
       id: newEventId,
@@ -423,27 +447,31 @@ const Timetable = forwardRef<TimetableRef, TimetableProps>(({ onEventClick, onEv
       semester: eventData.extendedProps?.semester || '',
       class: eventData.extendedProps?.class || '',
       type: eventData.extendedProps?.type || '',
-      backgroundColor: colors.bg,
-      borderColor: colors.border,
     };
 
+    // Aplicar cores baseadas na modalidade
+    const coloredEvent = applyEventColors(newEvent);
+
     setEvents(prevEvents => {
-      const updatedEvents = [...prevEvents, newEvent];
+      const updatedEvents = [...prevEvents, coloredEvent];
       notifyEventsChange(updatedEvents);
       return updatedEvents;
     });
 
     if (onEventClick) {
       setTimeout(() => {
-        onEventClick(newEvent);
+        onEventClick(coloredEvent);
       }, 100);
     }
   };
 
   // Function to add event from form
   const addEvent = (event: Event) => {
+    // Garantir que o evento tem as cores corretas baseadas na modalidade
+    const coloredEvent = applyEventColors(event);
+    
     setEvents(prevEvents => {
-      const updatedEvents = [...prevEvents, event];
+      const updatedEvents = [...prevEvents, coloredEvent];
       notifyEventsChange(updatedEvents);
       return updatedEvents;
     });
@@ -451,9 +479,12 @@ const Timetable = forwardRef<TimetableRef, TimetableProps>(({ onEventClick, onEv
 
   // Function to update event
   const updateEvent = (updatedEvent: Event) => {
+    // Garantir que o evento atualizado tem as cores corretas baseadas na modalidade
+    const coloredEvent = applyEventColors(updatedEvent);
+    
     setEvents(prevEvents => {
       const updatedEvents = prevEvents.map(event => 
-        event.id === updatedEvent.id ? updatedEvent : event
+        event.id === updatedEvent.id ? coloredEvent : event
       );
       notifyEventsChange(updatedEvents);
       return updatedEvents;

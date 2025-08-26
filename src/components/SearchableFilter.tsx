@@ -107,8 +107,8 @@ const SearchableFilter: React.FC<SearchableFilterProps> = ({
         }));
         
       case 'Disciplina':
-        // Retorna tanto códigos quanto nomes como opções separadas
-        const disciplinasPorNome = data.disciplinas.map(disc => ({
+        // Para o campo "Disciplina", mostrar APENAS os nomes das disciplinas
+        return data.disciplinas.map(disc => ({
           id: disc.id,
           display: disc.nome,
           searchText: `${disc.nome} ${disc.codigo} ${disc.tipo} ${disc.departamento}`.toLowerCase(),
@@ -116,18 +116,8 @@ const SearchableFilter: React.FC<SearchableFilterProps> = ({
           tipo: 'nome' as const
         }));
         
-        const disciplinasPorCodigo = data.disciplinas.map(disc => ({
-          id: disc.id,
-          display: disc.codigo,
-          searchText: `${disc.codigo} ${disc.nome} ${disc.tipo} ${disc.departamento}`.toLowerCase(),
-          additionalInfo: `${disc.nome} - ${disc.tipo}`,
-          tipo: 'codigo' as const
-        }));
-        
-        // Combina ambas as listas
-        return [...disciplinasPorNome, ...disciplinasPorCodigo];
-        
       case 'Código Disciplina':
+        // Para o campo "Código Disciplina", mostrar APENAS os códigos
         return data.disciplinas.map(disc => ({
           id: disc.id,
           display: disc.codigo,
@@ -212,9 +202,12 @@ const SearchableFilter: React.FC<SearchableFilterProps> = ({
         return modalidade ? 'Modalidade de Ensino' : '';
         
       case 'Disciplina':
-      case 'Código Disciplina':
-        const disciplina = data.disciplinas.find(d => d.nome === selectedValue || d.codigo === selectedValue);
+        const disciplina = data.disciplinas.find(d => d.nome === selectedValue);
         return disciplina ? `${disciplina.codigo} - ${disciplina.tipo}` : '';
+        
+      case 'Código Disciplina':
+        const disciplinaPorCodigo = data.disciplinas.find(d => d.codigo === selectedValue);
+        return disciplinaPorCodigo ? `${disciplinaPorCodigo.nome} - ${disciplinaPorCodigo.tipo}` : '';
         
       case 'Semestre':
         const semestre = data.semestres.find(s => s.codigo === selectedValue);

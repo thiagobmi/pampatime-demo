@@ -6,7 +6,7 @@ interface ClassCardProps {
   title: string;
   room?: string;
   professor?: string;
-  type: string;
+  type: string; // Modalidade
   className?: string;
   roomInfo?: string;
   event?: any;
@@ -16,14 +16,14 @@ const ClassCard: React.FC<ClassCardProps> = ({
   title,
   room,
   professor,
-  type,
+  type, // type agora representa a modalidade
   className,
   roomInfo,
   event
 }) => {
   const cardRef = useRef<HTMLDivElement>(null);
   
-  // Generate colors dynamically based on type
+  // Generate colors dynamically based on modalidade (type)
   const colors = getEventTypeColors(type);
   
   // Create event data for FullCalendar dragging with ALL properties
@@ -36,7 +36,7 @@ const ClassCard: React.FC<ClassCardProps> = ({
     extendedProps: {
       room: room || event?.room,
       professor: professor || event?.professor,
-      type: type || event?.type,
+      type: type || event?.type, // Modalidade
       semester: event?.semester,
       class: event?.class,
       // Include any other properties from the original event
@@ -51,7 +51,7 @@ const ClassCard: React.FC<ClassCardProps> = ({
     }
   }, [title, room, professor, type, roomInfo, colors, event]);
   
-  // Card styles with dynamic colors
+  // Card styles with dynamic colors based on modalidade
   const cardStyle = {
     backgroundColor: colors.bg,
     borderLeft: `4px solid ${colors.border}`,
@@ -87,6 +87,12 @@ const ClassCard: React.FC<ClassCardProps> = ({
       {event?.class && (
         <div className="text-xs opacity-75">
           Turma: {event.class}
+        </div>
+      )}
+      {/* Mostrar a modalidade */}
+      {type && (
+        <div className="text-xs opacity-75 font-semibold">
+          Modalidade: {type}
         </div>
       )}
       {roomInfo && <div className="text-xs mt-1 opacity-60">{roomInfo}</div>}
