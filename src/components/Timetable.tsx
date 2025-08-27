@@ -369,59 +369,63 @@ const Timetable = forwardRef<TimetableRef, TimetableProps>(({ onEventClick, onEv
     }
   };
 
+  // FIXED: Handle event drop with immediate sync
   const handleEventDrop = (info: any) => {
     // Criar o evento atualizado com as cores corretas da modalidade
     const updatedEventData = createEventDataFromFullCalendar(info.event);
     const recoloredEvent = applyEventColors(updatedEventData);
     
+    // Atualizar o evento com os novos horários
+    const finalEvent = {
+      ...recoloredEvent,
+      start: info.event.start,
+      end: info.event.end
+    };
+    
     setEvents(prevEvents => {
       const updatedEvents = prevEvents.map(event => 
-        event.id === info.event.id 
-          ? {
-              ...recoloredEvent,
-              start: info.event.start,
-              end: info.event.end
-            }
-          : event
+        event.id === info.event.id ? finalEvent : event
       );
       notifyEventsChange(updatedEvents);
       return updatedEvents;
     });
 
+    // CRITICAL FIX: Notify parent immediately if this is the selected event
     if (selectedEventId === info.event.id && onEventChange) {
-      onEventChange({
-        ...recoloredEvent,
-        start: info.event.start,
-        end: info.event.end
-      });
+      // Use setTimeout to ensure the state update happens after the calendar update
+      setTimeout(() => {
+        onEventChange(finalEvent);
+      }, 0);
     }
   };
 
+  // FIXED: Handle event resize with immediate sync
   const handleEventResize = (info: any) => {
     // Criar o evento redimensionado com as cores corretas da modalidade
     const resizedEventData = createEventDataFromFullCalendar(info.event);
     const recoloredEvent = applyEventColors(resizedEventData);
     
+    // Atualizar o evento com os novos horários
+    const finalEvent = {
+      ...recoloredEvent,
+      start: info.event.start,
+      end: info.event.end
+    };
+    
     setEvents(prevEvents => {
       const updatedEvents = prevEvents.map(event => 
-        event.id === info.event.id 
-          ? {
-              ...recoloredEvent,
-              start: info.event.start,
-              end: info.event.end
-            }
-          : event
+        event.id === info.event.id ? finalEvent : event
       );
       notifyEventsChange(updatedEvents);
       return updatedEvents;
     });
 
+    // CRITICAL FIX: Notify parent immediately if this is the selected event
     if (selectedEventId === info.event.id && onEventChange) {
-      onEventChange({
-        ...recoloredEvent,
-        start: info.event.start,
-        end: info.event.end
-      });
+      // Use setTimeout to ensure the state update happens after the calendar update
+      setTimeout(() => {
+        onEventChange(finalEvent);
+      }, 0);
     }
   };
 

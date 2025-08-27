@@ -391,7 +391,6 @@
       "nome": "Cálculo I",
       "tipo": "Cálculo",
       "cargaHoraria": 60,
-      "departamento": "Matemática",
       "prerequisitos": []
     },
     {
@@ -400,7 +399,6 @@
       "nome": "Matemática Discreta",
       "tipo": "Matemática",
       "cargaHoraria": 60,
-      "departamento": "Matemática",
       "prerequisitos": []
     },
     {
@@ -409,7 +407,6 @@
       "nome": "Algoritmos e Programação",
       "tipo": "Programação",
       "cargaHoraria": 80,
-      "departamento": "Computação",
       "prerequisitos": []
     },
     {
@@ -418,7 +415,6 @@
       "nome": "Estatística",
       "tipo": "Estatística",
       "cargaHoraria": 60,
-      "departamento": "Matemática",
       "prerequisitos": ["MAT001"]
     },
     {
@@ -427,7 +423,6 @@
       "nome": "Práticas de Programação",
       "tipo": "Laboratório",
       "cargaHoraria": 40,
-      "departamento": "Computação",
       "prerequisitos": ["COMP001"]
     },
     {
@@ -436,7 +431,6 @@
       "nome": "Desafios de Algoritmos",
       "tipo": "Desafios",
       "cargaHoraria": 40,
-      "departamento": "Computação",
       "prerequisitos": ["COMP001"]
     },
     {
@@ -445,7 +439,6 @@
       "nome": "Física I",
       "tipo": "Física",
       "cargaHoraria": 80,
-      "departamento": "Física",
       "prerequisitos": ["MAT001"]
     },
     {
@@ -454,7 +447,6 @@
       "nome": "Química Geral",
       "tipo": "Química",
       "cargaHoraria": 60,
-      "departamento": "Química",
       "prerequisitos": []
     },
     {
@@ -463,7 +455,6 @@
       "nome": "Banco de Dados",
       "tipo": "Programação",
       "cargaHoraria": 60,
-      "departamento": "Computação",
       "prerequisitos": ["COMP001"]
     },
     {
@@ -472,7 +463,6 @@
       "nome": "Redes de Computadores",
       "tipo": "Redes",
       "cargaHoraria": 60,
-      "departamento": "Computação",
       "prerequisitos": ["COMP001"]
     }
   ]

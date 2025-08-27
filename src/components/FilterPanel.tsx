@@ -3,11 +3,11 @@ import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import SearchableFilter from './SearchableFilter';
 import { Event, createEventWithFixedDate } from '@/types/Event';
-import { 
+import {
   getDisciplinaByNome,
   getDisciplinaById,
-  getSalaByCodigo, 
-  getTurmaByCodigo, 
+  getSalaByCodigo,
+  getTurmaByCodigo,
   getTipoByNome,
   getSemestreByCodigo,
   getHorarioByHora,
@@ -80,7 +80,12 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
   });
 
   // Update form when selectedEvent changes OR when event is dragged
+  // Update form when selectedEvent changes OR when event is dragged
+// Update form when selectedEvent changes OR when event is dragged
+// Update form when selectedEvent changes OR when event is dragged
   useEffect(() => {
+    console.log('FilterPanel: selectedEvent changed', selectedEvent);
+    
     if (selectedEvent) {
       const startTime = selectedEvent.start ? new Date(selectedEvent.start) : null;
       const endTime = selectedEvent.end ? new Date(selectedEvent.end) : null;
@@ -88,7 +93,7 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
       // Tentar encontrar a disciplina pelo título (nome)
       const disciplinaEncontrada = getDisciplinaByNome(selectedEvent.title);
 
-      setFormData({
+      const newFormData = {
         disciplina: selectedEvent.title || '',
         disciplinaCodigo: disciplinaEncontrada?.codigo || '',
         disciplinaId: disciplinaEncontrada?.id || '',
@@ -108,9 +113,13 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
         turmaId: '',
         modalidade: selectedEvent.type || '',
         modalidadeId: ''
-      });
+      };
+
+      console.log('FilterPanel: Setting new form data', newFormData);
+      setFormData(newFormData);
     } else {
       // Clear form when no event is selected
+      console.log('FilterPanel: Clearing form data');
       setFormData({
         disciplina: '',
         disciplinaCodigo: '',
@@ -134,7 +143,6 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
       });
     }
   }, [selectedEvent]);
-
   const formatTimeForInput = (date: Date): string => {
     return date.toTimeString().slice(0, 5); // HH:MM format
   };
@@ -172,7 +180,7 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
   const syncDisciplinaFields = (disciplinaId: string, isCodeSelection: boolean = false) => {
     const academicData = getAcademicData();
     const disciplina = academicData.disciplinas.find(d => d.id === disciplinaId);
-    
+
     if (disciplina) {
       setFormData(prev => ({
         ...prev,
@@ -249,10 +257,10 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
   // Função para verificar se todos os campos obrigatórios estão preenchidos
   const todosOsCamposPreenchidos = (): boolean => {
     const camposObrigatorios = [
-      'disciplina', 'professor', 'semestre', 'horarioInicio', 
+      'disciplina', 'professor', 'semestre', 'horarioInicio',
       'horarioFinal', 'sala', 'dia', 'turma', 'modalidade'
     ];
-    
+
     return camposObrigatorios.every(campo => {
       const valor = formData[campo as keyof FormState];
       return valor && valor.trim() !== '';
@@ -262,10 +270,10 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
   // Função para verificar se horários são válidos
   const horariosValidos = (): boolean => {
     if (!formData.horarioInicio || !formData.horarioFinal) return false;
-    
+
     const startMinutes = timeToMinutes(formData.horarioInicio);
     const endMinutes = timeToMinutes(formData.horarioFinal);
-    
+
     return endMinutes > startMinutes;
   };
 
@@ -304,7 +312,7 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
     // Validar que horário final é posterior ao inicial
     const startMinutes = timeToMinutes(formData.horarioInicio);
     const endMinutes = timeToMinutes(formData.horarioFinal);
-    
+
     if (endMinutes <= startMinutes) {
       alert('O horário final deve ser posterior ao horário inicial.');
       return;
@@ -386,7 +394,7 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
     // Validar que horário final é posterior ao inicial
     const startMinutes = timeToMinutes(formData.horarioInicio);
     const endMinutes = timeToMinutes(formData.horarioFinal);
-    
+
     if (endMinutes <= startMinutes) {
       alert('O horário final deve ser posterior ao horário inicial.');
       return;
@@ -457,7 +465,7 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
         <div className="grid grid-cols-2 gap-2">
           <div>
             <label className="block text-sm font-medium mb-1 text-gray-700">
-              Disciplina 
+              Disciplina
             </label>
             <SearchableFilter
               label="Disciplina"
@@ -467,7 +475,7 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
           </div>
           <div>
             <label className="block text-sm font-medium mb-1 text-gray-700">
-              Código Disciplina 
+              Código Disciplina
             </label>
             <SearchableFilter
               label="Código Disciplina"
@@ -476,11 +484,11 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
             />
           </div>
         </div>
-        
+
         <div className="grid grid-cols-2 gap-2">
           <div>
             <label className="block text-sm font-medium mb-1 text-gray-700">
-              Professor 
+              Professor
             </label>
             <SearchableFilter
               label="Professor"
@@ -490,7 +498,7 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
           </div>
           <div>
             <label className="block text-sm font-medium mb-1 text-gray-700">
-              Semestre 
+              Semestre
             </label>
             <SearchableFilter
               label="Semestre"
@@ -502,7 +510,7 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
         <div className="grid grid-cols-2 gap-2">
           <div>
             <label className="block text-sm font-medium mb-1 text-gray-700">
-              Horário Início 
+              Horário Início
             </label>
             <SearchableFilter
               label="Horário Início"
@@ -512,7 +520,7 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
           </div>
           <div>
             <label className="block text-sm font-medium mb-1 text-gray-700">
-              Horário Final 
+              Horário Final
             </label>
             <SearchableFilter
               label="Horário Final"
@@ -525,7 +533,7 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
         <div className="grid grid-cols-2 gap-2">
           <div>
             <label className="block text-sm font-medium mb-1 text-gray-700">
-              Sala 
+              Sala
             </label>
             <SearchableFilter
               label="Sala"
@@ -535,7 +543,7 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
           </div>
           <div>
             <label className="block text-sm font-medium mb-1 text-gray-700">
-              Dia 
+              Dia
             </label>
             <SearchableFilter
               label="Dia"
@@ -547,7 +555,7 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
         <div className="grid grid-cols-2 gap-2">
           <div>
             <label className="block text-sm font-medium mb-1 text-gray-700">
-              Turma 
+              Turma
             </label>
             <SearchableFilter
               label="Turma"
@@ -557,7 +565,7 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
           </div>
           <div>
             <label className="block text-sm font-medium mb-1 text-gray-700">
-              Modalidade 
+              Modalidade
             </label>
             <SearchableFilter
               label="Modalidade"
@@ -572,11 +580,10 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
         <Button
           variant="outline"
           size="sm"
-          className={`text-xs font-medium ${
-            podeExecutarAcao() 
-              ? 'bg-white hover:bg-green-50 text-gray-900' 
+          className={`text-xs font-medium ${podeExecutarAcao()
+              ? 'bg-white hover:bg-green-50 text-gray-900'
               : 'bg-gray-100 text-gray-400 cursor-not-allowed'
-          }`}
+            }`}
           onClick={handleAdd}
           disabled={!podeExecutarAcao()}
           title={!podeExecutarAcao() ? 'Preencha todos os campos obrigatórios' : 'Adicionar evento'}
@@ -586,18 +593,17 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
         <Button
           variant="outline"
           size="sm"
-          className={`text-xs font-medium ${
-            selectedEvent && podeExecutarAcao()
-              ? 'bg-white hover:bg-blue-50 text-gray-900' 
+          className={`text-xs font-medium ${selectedEvent && podeExecutarAcao()
+              ? 'bg-white hover:bg-blue-50 text-gray-900'
               : 'bg-gray-100 text-gray-400 cursor-not-allowed'
-          }`}
+            }`}
           onClick={handleEdit}
           disabled={!selectedEvent || !podeExecutarAcao()}
           title={
-            !selectedEvent 
-              ? 'Selecione um evento para editar' 
-              : !podeExecutarAcao() 
-                ? 'Preencha todos os campos obrigatórios' 
+            !selectedEvent
+              ? 'Selecione um evento para editar'
+              : !podeExecutarAcao()
+                ? 'Preencha todos os campos obrigatórios'
                 : 'Editar evento'
           }
         >
@@ -606,11 +612,10 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
         <Button
           variant="outline"
           size="sm"
-          className={`text-xs font-medium ${
-            selectedEvent
+          className={`text-xs font-medium ${selectedEvent
               ? 'bg-white hover:bg-red-50 text-gray-900'
               : 'bg-gray-100 text-gray-400 cursor-not-allowed'
-          }`}
+            }`}
           onClick={handleDelete}
           disabled={!selectedEvent}
           title={!selectedEvent ? 'Selecione um evento para excluir' : 'Excluir evento'}

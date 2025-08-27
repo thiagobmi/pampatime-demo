@@ -61,7 +61,6 @@ export interface Disciplina {
   nome: string;
   tipo: string;
   cargaHoraria: number;
-  departamento: string;
   prerequisitos: string[];
 }
 

@@ -30,19 +30,20 @@ const Index = () => {
     setSelectedEvent(event);
   };
 
-  // Handle event changes in real-time (drag, resize)
+  // FIXED: Handle event changes in real-time (drag, resize) with immediate update
   const handleEventChange = (updatedEvent: Event) => {
     console.log('Index: Evento alterado em tempo real', updatedEvent);
     
-    // Atualizar o selectedEvent se for o mesmo evento
+    // CRITICAL: Update selectedEvent immediately if it's the same event
     if (selectedEvent && selectedEvent.id === updatedEvent.id) {
+      console.log('Index: Atualizando selectedEvent em tempo real');
       setSelectedEvent(updatedEvent);
     }
     
-    // Também atualizar no Timetable
-    if (timetableRef.current && timetableRef.current.updateEvent) {
-      timetableRef.current.updateEvent(updatedEvent);
-    }
+    // Também atualizar a lista de eventos existentes
+    setExistingEvents(prev => 
+      prev.map(event => event.id === updatedEvent.id ? updatedEvent : event)
+    );
   };
 
   // Handle event update from form
@@ -97,27 +98,46 @@ const Index = () => {
     setSelectedEvent(null);
   };
 
+  // ADDED: Handle events list changes from Timetable
+  const handleEventsChange = (events: Event[]) => {
+    console.log('Index: Lista de eventos atualizada', events.length);
+    setExistingEvents(events);
+    
+    // Update selectedEvent if it still exists in the new events list
+    if (selectedEvent) {
+      const updatedSelectedEvent = events.find(event => event.id === selectedEvent.id);
+      if (updatedSelectedEvent) {
+        setSelectedEvent(updatedSelectedEvent);
+      } else {
+        setSelectedEvent(null); // Event was deleted
+      }
+    }
+  };
+
   return (
     <div className="h-screen flex flex-col bg-gray-50 overflow-hidden">
       <Header />
       <main className="flex-1 p-2 md:p-4 min-h-0 overflow-hidden">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-2 md:gap-4 h-full">
-          <div className="lg:col-span-1 h-full overflow-auto">
+        <div className="flex flex-col lg:flex-row gap-2 md:gap-4 h-full">
+          {/* Side Panel - Better responsive sizing */}
+          <div className="w-full lg:w-80 xl:w-96 2xl:w-[430px] flex-shrink-0 h-[50vh] lg:h-full overflow-hidden">
             <SidePanel 
               selectedEvent={selectedEvent}
               onEventUpdate={handleEventUpdate}
               onEventAdd={handleEventAdd}
               onEventDelete={handleEventDelete}
               onClearSelection={handleClearSelection}
-              onEventChange={handleEventChange} // Nova prop para mudanças em tempo real
+              onEventChange={handleEventChange} // Para mudanças em tempo real
             />
           </div>
           
-          <div className="lg:col-span-3 h-full">
+          {/* Timetable - Takes remaining space */}
+          <div className="flex-1 min-w-0 h-[50vh] lg:h-full">
             <Timetable 
               ref={timetableRef}
               onEventClick={handleEventClick}
-              onEventChange={handleEventChange} // Nova prop para mudanças em tempo real
+              onEventChange={handleEventChange} // Para mudanças em tempo real
+              onEventsChange={handleEventsChange} // NEW: Para mudanças na lista de eventos
             />
           </div>
         </div>

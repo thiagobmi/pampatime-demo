@@ -111,7 +111,7 @@ const SearchableFilter: React.FC<SearchableFilterProps> = ({
         return data.disciplinas.map(disc => ({
           id: disc.id,
           display: disc.nome,
-          searchText: `${disc.nome} ${disc.codigo} ${disc.tipo} ${disc.departamento}`.toLowerCase(),
+          searchText: `${disc.nome} ${disc.codigo} ${disc.tipo}`.toLowerCase(),
           additionalInfo: `${disc.codigo} - ${disc.tipo}`,
           tipo: 'nome' as const
         }));
@@ -121,7 +121,7 @@ const SearchableFilter: React.FC<SearchableFilterProps> = ({
         return data.disciplinas.map(disc => ({
           id: disc.id,
           display: disc.codigo,
-          searchText: `${disc.codigo} ${disc.nome} ${disc.tipo} ${disc.departamento}`.toLowerCase(),
+          searchText: `${disc.codigo} ${disc.nome} ${disc.tipo}`.toLowerCase(),
           additionalInfo: `${disc.nome} - ${disc.tipo}`,
           tipo: 'codigo' as const
         }));

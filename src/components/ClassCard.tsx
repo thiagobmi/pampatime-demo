@@ -44,7 +44,6 @@ const ClassCard: React.FC<ClassCardProps> = ({
       semester: '', // Vazio
       class: '', // Vazio
       codigo: event?.codigo || '', // Manter código para referência
-      departamento: event?.departamento || ''
     }
   };
   
@@ -65,11 +64,6 @@ const ClassCard: React.FC<ClassCardProps> = ({
       <div className="text-xs opacity-75 font-semibold">
         Código: {type}
       </div>
-      {event?.departamento && (
-        <div className="text-xs opacity-60 mt-1">
-          {event.departamento}
-        </div>
-      )}
     </div>
   );
 };

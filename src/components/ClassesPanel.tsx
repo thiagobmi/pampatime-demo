@@ -39,15 +39,14 @@ const ClassesPanel: React.FC<ClassesPanelProps> = () => {
     return allDisciplinas.filter(disciplina => 
       disciplina.nome.toLowerCase().includes(searchLower) ||
       disciplina.codigo.toLowerCase().includes(searchLower) ||
-      disciplina.tipo.toLowerCase().includes(searchLower) ||
-      disciplina.departamento.toLowerCase().includes(searchLower)
+      disciplina.tipo.toLowerCase().includes(searchLower)
     );
   }, [allDisciplinas, searchTerm]);
 
   return (
-    <div className="bg-white p-3 rounded-lg border border-gray-200 shadow-sm flex flex-col h-full min-h-0">
+    <div className="bg-white p-3 md:p-4 rounded-lg border border-gray-200 shadow-sm flex flex-col h-full min-h-0">
       <div className="flex-shrink-0 mb-3">
-        <h3 className="text-sm font-semibold text-gray-700 mb-2">
+        <h3 className="text-sm md:text-base font-semibold text-gray-700 mb-3">
           Disciplinas Disponíveis ({filteredDisciplinas.length})
         </h3>
         
@@ -56,14 +55,14 @@ const ClassesPanel: React.FC<ClassesPanelProps> = () => {
           <input 
             type="text" 
             placeholder="Pesquisar disciplinas..." 
-            className="pl-8 pr-10 py-2 w-full border rounded-lg text-sm"
+            className="pl-8 pr-10 py-2.5 w-full border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
           <Button 
             variant="ghost" 
             size="icon" 
-            className="absolute right-1 top-1/2 transform -translate-y-1/2 h-7 w-7"
+            className="absolute right-1 top-1/2 transform -translate-y-1/2 h-8 w-8"
             onClick={() => setSearchTerm('')}
           >
             <svg width="16" height="16" viewBox="0 0 15 15" fill="none">
@@ -73,7 +72,7 @@ const ClassesPanel: React.FC<ClassesPanelProps> = () => {
         </div>
       </div>
         
-      <div ref={draggableContainerRef} className="space-y-2 overflow-y-auto flex-1">
+      <div ref={draggableContainerRef} className="space-y-2 overflow-y-auto flex-1 pr-1">
         {filteredDisciplinas.length > 0 ? (
           filteredDisciplinas.map((disciplina) => (
             <ClassCard 
@@ -89,8 +88,7 @@ const ClassesPanel: React.FC<ClassesPanelProps> = () => {
                 professor: '',
                 semester: '',
                 class: '',
-                codigo: disciplina.codigo,
-                departamento: disciplina.departamento
+                codigo: disciplina.codigo
               }}
               className="hover:shadow-md transition-shadow"
             />
@@ -117,13 +115,6 @@ const ClassesPanel: React.FC<ClassesPanelProps> = () => {
         )}
       </div>
       
-      {filteredDisciplinas.length > 0 && (
-        <div className="mt-3 pt-3 border-t border-gray-200">
-          <p className="text-xs text-gray-500 text-center">
-            Arraste as disciplinas para o calendário para criar eventos
-          </p>
-        </div>
-      )}
     </div>
   );
 };
