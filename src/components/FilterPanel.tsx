@@ -79,10 +79,7 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
     modalidadeId: ''
   });
 
-  // Update form when selectedEvent changes OR when event is dragged
-  // Update form when selectedEvent changes OR when event is dragged
-// Update form when selectedEvent changes OR when event is dragged
-// Update form when selectedEvent changes OR when event is dragged
+
   useEffect(() => {
     console.log('FilterPanel: selectedEvent changed', selectedEvent);
     
